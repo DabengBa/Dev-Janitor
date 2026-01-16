@@ -43,22 +43,6 @@ interface ComposerPackage {
 }
 
 /**
- * cargo package structure (from cargo install --list)
- */
-interface CargoPackage {
-  name: string
-  version: string
-}
-
-/**
- * gem package structure
- */
-interface GemPackage {
-  name: string
-  version: string
-}
-
-/**
  * Parse npm list JSON output
  * 
  * Property 6: Package List Parsing

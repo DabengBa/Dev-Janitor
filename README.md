@@ -146,8 +146,6 @@ Download the latest release for your platform from the [Releases](https://github
 
 ## Usage
 
-## Usage
-
 ### AI Assistant
 
 The AI Assistant helps you intelligently analyze and optimize your development environment:
@@ -181,8 +179,9 @@ Manage your globally installed packages:
 
 1. **Switch Package Manager**: Use tabs to switch between npm, pip, and Composer
 2. **Search Packages**: Filter packages by name
-3. **Uninstall Packages**: Click the uninstall button to remove a package
-4. **Refresh List**: Update the package list with the refresh button
+3. **Check Updates**: Click "Check All Updates" to detect outdated packages
+4. **Update Packages**: Click on outdated version tags to copy update commands
+5. **Refresh List**: Update the package list with the refresh button
 
 ### Services View
 
@@ -207,7 +206,8 @@ Explore your system's environment configuration:
 Customize your experience:
 
 1. **Language**: Switch between English and Chinese
-2. **About**: View application version and information
+2. **AI Config**: Configure OpenAI API Key for AI-powered analysis
+3. **About**: View application version, license, and contact information
 
 ## Development
 
