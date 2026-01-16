@@ -562,24 +562,16 @@ Please respond in English with clear formatting. Each suggestion should include 
       throw new Error(`AI API ${isZhCN ? '错误' : 'error'}: ${status} ${response.statusText} - ${errorDetail}`)
     }
 
-    interface AIResponse {
-      choices?: Array<{
-        message?: { content?: string }
-        text?: string
-      }>
-      content?: string
-    }
-
-    let data: AIResponse
+    let data: { choices?: Array<{ message?: { content?: string }; text?: string }>; content?: string } | null = null
     try {
       data = await response.json()
     } catch {
       throw new Error(isZhCN ? 'AI 响应格式错误（不是 JSON）' : 'AI API response format error')
     }
 
-    const content = data.choices?.[0]?.message?.content ||
-                    data.choices?.[0]?.text ||
-                    data.content ||
+    const content = data?.choices?.[0]?.message?.content ||
+                    data?.choices?.[0]?.text ||
+                    data?.content ||
                     (typeof data === 'string' ? data : null)
 
     if (!content) {
@@ -641,7 +633,7 @@ Please respond in English with clear formatting. Each suggestion should include 
     }
 
     const data = await response.json()
-    return data.choices[0]?.message?.content || (isZhCN ? '无法获取 AI 响应' : 'Unable to get AI response')
+    return data.choices?.[0]?.message?.content || (isZhCN ? '无法获取 AI 响应' : 'Unable to get AI response')
   }
 
   /**
@@ -672,8 +664,17 @@ Please respond in English with clear formatting. Each suggestion should include 
       }
 
       const data = await response.json()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return data.data?.map((m: any) => m.id) || []
+      const rawModels = Array.isArray(data) ? data : (data.data || data.models || data.results || [])
+      
+      if (!Array.isArray(rawModels)) return []
+
+      return rawModels
+        .map((m: { id: string } | string) => typeof m === 'string' ? m : m.id)
+        .filter((id): id is string => 
+          typeof id === 'string' && 
+          !/whisper|dall-e|tts|embed|moderation/i.test(id)
+        )
+        .sort((a, b) => a.toLowerCase().includes('gpt') ? -1 : b.toLowerCase().includes('gpt') ? 1 : a.localeCompare(b))
     } catch (e) {
       console.error('Failed to parse models JSON:', e)
       return []

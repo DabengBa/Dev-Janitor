@@ -45,18 +45,13 @@ export const AIConfigSection: React.FC = () => {
   const handleFetchModels = async () => {
     try {
       setFetchingModels(true)
-      const values = await form.validateFields(['provider', 'apiKey', 'baseUrl'])
+      const values = await form.validateFields(['provider', 'apiKey', 'baseUrl'].filter(f => f !== 'baseUrl' || provider === 'custom'))
 
-      const config: AIConfig = {
-        ...values,
-        enabled: true
-      }
-
-      // Update config temporarily to fetch models
+      const config: AIConfig = { ...values, enabled: true }
       await window.electronAPI.ai.updateConfig(config)
 
       const models = await window.electronAPI.ai.fetchModels()
-      if (models && models.length > 0) {
+      if (models?.length > 0) {
         setFetchedModels(models)
         message.success(t('settings.modelsFetched', '成功获取模型列表'))
       } else {
@@ -73,27 +68,19 @@ export const AIConfigSection: React.FC = () => {
   const handleTestConnection = async () => {
     try {
       setTesting(true)
-      const values = await form.validateFields(['provider', 'apiKey', 'baseUrl', 'model'])
+      const values = await form.validateFields(['provider', 'apiKey', 'baseUrl', 'model'].filter(f => f !== 'baseUrl' || provider === 'custom'))
       
-      const config: AIConfig = {
-        ...values,
-        enabled: true
-      }
+      const config: AIConfig = { ...values, enabled: true }
 
-      // Check if user is using a default model with a custom provider
       if (config.provider === 'custom' && (config.model === 'gpt-5' || !config.model)) {
         message.info(t('settings.modelWarning', '提示：检测到您正在使用自定义模型，请确保模型名称已正确填写'), 5)
       }
 
       const result = await window.electronAPI.ai.testConnection(config)
-      if (result.success) {
-        message.success(result.message)
-      } else {
-        message.error(result.message)
-      }
+      message[result.success ? 'success' : 'error'](result.message)
     } catch (error) {
       console.error('Test connection failed:', error)
-      message.error(t('settings.testConnectionError', '测试连接失败，请检查必填项'))
+      message.error(t('settings.testConnectionError', '测试连接失败，请检查配置'))
     } finally {
       setTesting(false)
     }
@@ -132,6 +119,22 @@ export const AIConfigSection: React.FC = () => {
     localStorage.removeItem('aiConfig')
     setSaved(false)
   }
+
+  const recommendedOptions = [
+    { value: 'gpt-5', label: 'GPT-5 (推荐 - 最强编码能力)' },
+    { value: 'gpt-5-mini', label: 'GPT-5 Mini (快速且经济)' },
+    { value: 'gpt-5-nano', label: 'GPT-5 Nano (超快超省)' },
+    { value: 'o3', label: 'o3 (推理增强 - 复杂问题)' },
+    { value: 'o4-mini', label: 'o4-mini (推理增强 - 经济版)' },
+    { value: 'gpt-4.1', label: 'GPT-4.1 (上一代稳定版)' },
+  ]
+
+  const modelOptions = fetchedModels.length > 0
+    ? Array.from(new Set(fetchedModels)).map(m => {
+        const recommended = recommendedOptions.find(r => r.value === m)
+        return recommended || { value: m, label: m }
+      })
+    : recommendedOptions
 
   return (
     <Card
@@ -274,20 +277,12 @@ export const AIConfigSection: React.FC = () => {
                   allowClear
                   style={{ width: '100%' }}
                   placeholder={t('settings.selectOrInputModel', '选择或输入模型')}
-                >
-                  {fetchedModels.length > 0 ? (
-                    fetchedModels.map(m => <Option key={m} value={m}>{m}</Option>)
-                  ) : (
-                    <>
-                      <Option value="gpt-5">GPT-5 (推荐 - 最强编码能力)</Option>
-                      <Option value="gpt-5-mini">GPT-5 Mini (快速且经济)</Option>
-                      <Option value="gpt-5-nano">GPT-5 Nano (超快超省)</Option>
-                      <Option value="o3">o3 (推理增强 - 复杂问题)</Option>
-                      <Option value="o4-mini">o4-mini (推理增强 - 经济版)</Option>
-                      <Option value="gpt-4.1">GPT-4.1 (上一代稳定版)</Option>
-                    </>
-                  )}
-                </Select>
+                  filterOption={(input, option) =>
+                    (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase()) ||
+                    (option?.value as string ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={modelOptions}
+                />
               </Form.Item>
               <Button
                 icon={<ReloadOutlined />}
