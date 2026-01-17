@@ -358,7 +358,8 @@ export class AIAnalyzer {
     tools: ToolInfo[],
     packages: PackageInfo[],
     environment: EnvironmentVariable[],
-    services: RunningService[]
+    services: RunningService[],
+    onToken?: (token: string) => void
   ): Promise<string> {
     if (!this.config.enabled || !this.config.apiKey) {
       return this.config.language === 'zh-CN' 
@@ -369,7 +370,7 @@ export class AIAnalyzer {
     const prompt = this.buildPrompt(tools, packages, environment, services)
     
     try {
-      const response = await this.callAI(prompt)
+      const response = await this.callAI(prompt, onToken)
       return response
     } catch (error) {
       const errMsg = (error as Error).message
@@ -471,12 +472,12 @@ Please respond in English with clear formatting. Each suggestion should include 
   /**
    * Call AI API
    */
-  private async callAI(prompt: string): Promise<string> {
+  private async callAI(prompt: string, onToken?: (token: string) => void): Promise<string> {
     if (this.config.provider === 'openai') {
-      return this.callOpenAI(prompt)
+      return this.callOpenAI(prompt, onToken)
     }
     if (this.config.provider === 'custom') {
-      return this.callCustomAI(prompt)
+      return this.callCustomAI(prompt, onToken)
     }
 
     throw new Error(this.config.language === 'zh-CN' ? '不支持的 AI 提供商' : 'Unsupported AI provider')
@@ -505,7 +506,7 @@ Please respond in English with clear formatting. Each suggestion should include 
   /**
    * Call Custom AI API
    */
-  private async callCustomAI(prompt: string): Promise<string> {
+  private async callCustomAI(prompt: string, onToken?: (token: string) => void): Promise<string> {
     const model = this.config.model || 'gpt-5'
     const isZhCN = this.config.language === 'zh-CN'
     const currentDate = new Date().toISOString().split('T')[0]
@@ -520,7 +521,7 @@ Please respond in English with clear formatting. Each suggestion should include 
         { role: 'system', content: systemContent },
         { role: 'user', content: prompt }
       ],
-      stream: false,
+      stream: !!onToken,
       max_tokens: 2000,
       temperature: 0.7
     }
@@ -528,7 +529,7 @@ Please respond in English with clear formatting. Each suggestion should include 
     const baseUrl = this.getBaseUrl()
     const url = `${baseUrl}/chat/completions`
 
-    console.log(`AI Request [custom]: ${url} (Model: ${model})`)
+    console.log(`AI Request [custom]: ${url} (Model: ${model}, Stream: ${!!onToken})`)
 
     const response = await fetch(url, {
       method: 'POST',
@@ -562,6 +563,33 @@ Please respond in English with clear formatting. Each suggestion should include 
       throw new Error(`AI API ${isZhCN ? '错误' : 'error'}: ${status} ${response.statusText} - ${errorDetail}`)
     }
 
+    // Stream handler
+    if (onToken && response.body) {
+      let fullContent = ''
+      const decoder = new TextDecoder('utf-8')
+      for await (const chunk of response.body) {
+        const text = decoder.decode(chunk as Uint8Array, { stream: true })
+        const lines = text.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed === 'data: [DONE]') continue
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmed.slice(6))
+              const content = data.choices?.[0]?.delta?.content || ''
+              if (content) {
+                fullContent += content
+                onToken(content)
+              }
+            } catch {
+              // ignore partial json
+            }
+          }
+        }
+      }
+      return fullContent
+    }
+
     let data: { choices?: Array<{ message?: { content?: string }; text?: string }>; content?: string } | null = null
     try {
       data = await response.json()
@@ -584,7 +612,7 @@ Please respond in English with clear formatting. Each suggestion should include 
   /**
    * Call OpenAI API
    */
-  private async callOpenAI(prompt: string): Promise<string> {
+  private async callOpenAI(prompt: string, onToken?: (token: string) => void): Promise<string> {
     const model = this.config.model || 'gpt-5'
     const isGPT5 = model.startsWith('gpt-5')
     const isO3OrO4 = model.startsWith('o3') || model.startsWith('o4')
@@ -607,7 +635,8 @@ Please respond in English with clear formatting. Each suggestion should include 
           role: 'user',
           content: prompt
         }
-      ]
+      ],
+      stream: !!onToken
     }
 
     // GPT-5 and o-series use max_completion_tokens instead of max_tokens
@@ -630,6 +659,35 @@ Please respond in English with clear formatting. Each suggestion should include 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       throw new Error(`OpenAI API ${isZhCN ? '错误' : 'error'}: ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ''}`)
+    }
+
+    // Stream handler
+    if (onToken && response.body) {
+      let fullContent = ''
+      const decoder = new TextDecoder('utf-8')
+      
+      // Node.js fetch response body is async iterable
+      for await (const chunk of response.body) {
+        const text = decoder.decode(chunk as Uint8Array, { stream: true })
+        const lines = text.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed === 'data: [DONE]') continue
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmed.slice(6))
+              const content = data.choices?.[0]?.delta?.content || ''
+              if (content) {
+                fullContent += content
+                onToken(content)
+              }
+            } catch {
+              // ignore partial json
+            }
+          }
+        }
+      }
+      return fullContent
     }
 
     const data = await response.json()
@@ -749,7 +807,8 @@ export class AIAssistant {
     tools: ToolInfo[],
     packages: PackageInfo[],
     environment: EnvironmentVariable[],
-    services: RunningService[]
+    services: RunningService[],
+    onToken?: (token: string) => void
   ): Promise<AnalysisResult> {
     // Local analysis (always available)
     const toolIssues = this.localAnalyzer.analyzeTools(tools)
@@ -786,17 +845,34 @@ export class AIAssistant {
     // AI insights (if available)
     const insights: string[] = []
     if (this.aiAnalyzer) {
-      try {
-        const aiResponse = await this.aiAnalyzer.analyzeWithAI(
+      if (onToken) {
+        // Streaming mode: Return immediately with empty insight, allow stream to populate
+        insights.push('')
+        // Run AI in background
+        this.aiAnalyzer.analyzeWithAI(
           tools,
           packages,
           environment,
-          services
-        )
-        insights.push(aiResponse)
-      } catch (error) {
-        const errMsg = (error as Error).message
-        insights.push(isZhCN ? `AI 分析不可用: ${errMsg}` : `AI analysis unavailable: ${errMsg}`)
+          services,
+          onToken
+        ).catch(error => {
+          console.error('AI Analysis stream failed:', error)
+          onToken(isZhCN ? `\n\n[AI 分析出错: ${(error as Error).message}]` : `\n\n[AI Analysis Error: ${(error as Error).message}]`)
+        })
+      } else {
+        // Standard mode: Await result
+        try {
+          const aiResponse = await this.aiAnalyzer.analyzeWithAI(
+            tools,
+            packages,
+            environment,
+            services
+          )
+          insights.push(aiResponse)
+        } catch (error) {
+          const errMsg = (error as Error).message
+          insights.push(isZhCN ? `AI 分析不可用: ${errMsg}` : `AI analysis unavailable: ${errMsg}`)
+        }
       }
     }
     

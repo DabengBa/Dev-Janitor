@@ -51,8 +51,11 @@ declare global {
         onLanguageChanged: (callback: (lang: string) => void) => () => void
       }
       ai: {
-        analyze: (language?: 'en-US' | 'zh-CN') => Promise<AnalysisResult>
+        analyze: (language?: 'en-US' | 'zh-CN', useCache?: boolean) => Promise<AnalysisResult>
         updateConfig: (config: AIConfig) => Promise<void>
+        fetchModels: () => Promise<string[]>
+        testConnection: (config: AIConfig) => Promise<{ success: boolean; message: string }>
+        onStreamToken: (callback: (token: string) => void) => () => void
       }
       shell: {
         openPath: (path: string) => Promise<string>

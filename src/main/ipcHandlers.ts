@@ -24,6 +24,14 @@ import type { ToolInfo, PackageInfo, RunningService, EnvironmentVariable, Analys
 // Store for language preference
 let currentLanguage = 'en-US'
 
+// Cache for environment data to allow re-analysis without re-scanning
+let cachedEnvironmentData: {
+  tools: ToolInfo[]
+  packages: PackageInfo[]
+  environment: EnvironmentVariable[]
+  services: RunningService[]
+} | null = null
+
 /**
  * Send event to all renderer windows
  * @param channel The event channel name
@@ -286,24 +294,41 @@ function registerSettingsHandlers(): void {
  */
 function registerAIHandlers(): void {
   // Analyze environment
-  ipcMain.handle('ai:analyze', async (_event, language?: 'en-US' | 'zh-CN'): Promise<AnalysisResult> => {
+  ipcMain.handle('ai:analyze', async (_event, language?: 'en-US' | 'zh-CN', useCache: boolean = false): Promise<AnalysisResult> => {
     try {
       // Update language only (don't override other config)
       if (language) {
         aiAssistant.setLanguage(language)
       }
       
-      // Gather all data
-      const tools = await detectionEngine.detectAllTools()
-      const npmPackages = await packageManager.listNpmPackages()
-      const pipPackages = await packageManager.listPipPackages()
-      const composerPackages = await packageManager.listComposerPackages()
-      const packages = [...npmPackages, ...pipPackages, ...composerPackages]
-      const services = await serviceMonitor.listRunningServices()
-      const environment = environmentScanner.getAllEnvironmentVariables()
+      let tools: ToolInfo[]
+      let packages: PackageInfo[]
+      let services: RunningService[]
+      let environment: EnvironmentVariable[]
+
+      // Use cached data if requested and available
+      if (useCache && cachedEnvironmentData) {
+        ({ tools, packages, services, environment } = cachedEnvironmentData)
+      } else {
+        // Gather all data
+        tools = await detectionEngine.detectAllTools()
+        const npmPackages = await packageManager.listNpmPackages()
+        const pipPackages = await packageManager.listPipPackages()
+        const composerPackages = await packageManager.listComposerPackages()
+        packages = [...npmPackages, ...pipPackages, ...composerPackages]
+        services = await serviceMonitor.listRunningServices()
+        environment = environmentScanner.getAllEnvironmentVariables()
+        
+        // Update cache
+        cachedEnvironmentData = { tools, packages, environment, services }
+      }
       
       // Perform analysis
-      const result = await aiAssistant.analyze(tools, packages, environment, services)
+      const onToken = (token: string) => {
+        _event.sender.send('ai:stream-token', token)
+      }
+      
+      const result = await aiAssistant.analyze(tools, packages, environment, services, onToken)
       return result
     } catch (error) {
       console.error('Error analyzing environment:', error)

@@ -17,7 +17,7 @@
  * ============================================================================
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Drawer, Button, Spin, Alert, Card, Tag, Space, Divider, Typography, Collapse, message, Tooltip } from 'antd'
 import { 
   RobotOutlined, 
@@ -27,13 +27,126 @@ import {
   CloseCircleOutlined,
   InfoCircleOutlined,
   LinkOutlined,
-  CopyOutlined
+  CopyOutlined,
+  ReloadOutlined
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { AnalysisResult, Issue, Suggestion } from '../../../shared/types'
 
 const { Title, Text, Paragraph } = Typography
 const { Panel } = Collapse
+
+/**
+ * Component to handle AI insight content with thinking folding and Markdown rendering
+ */
+const AIInsightContent: React.FC<{ content: string }> = ({ content }) => {
+  const { t } = useTranslation()
+  
+  // Robustly extract thinking content (supports streaming/unclosed tags)
+  let thinking: string | null = null
+  let mainContent = content
+
+  // 1. Try to find complete <think>...</think> block
+  const completeMatch = content.match(/<think>([\s\S]*?)<\/think>/)
+  if (completeMatch) {
+    thinking = completeMatch[1].trim()
+    mainContent = content.replace(/<think>[\s\S]*?<\/think>/, '').trim()
+  } else {
+    // 2. If valid block not found, check for unclosed start tag (streaming)
+    const startMatch = content.match(/<think>([\s\S]*)/)
+    if (startMatch) {
+      thinking = startMatch[1].trim()
+      mainContent = content.substring(0, startMatch.index).trim()
+    }
+  }
+
+  return (
+    <div className="ai-insight-content">
+      {thinking && (
+        <Collapse 
+          ghost 
+          defaultActiveKey={[]} // Default collapsed
+          style={{ marginBottom: 16, background: 'rgba(0, 0, 0, 0.02)', borderRadius: 8 }}
+        >
+          <Panel 
+            header={
+              <Space>
+                <BulbOutlined style={{ color: '#faad14' }} />
+                <Text type="secondary">{t('ai.thinking', 'Thinking Process...')}</Text>
+              </Space>
+            } 
+            key="thinking"
+          >
+            <div style={{ color: '#8c8c8c', fontStyle: 'italic', fontSize: '0.9em', whiteSpace: 'pre-wrap' }}>
+              {thinking}
+            </div>
+          </Panel>
+        </Collapse>
+      )}
+      <div className="markdown-content">
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]}
+          components={{
+            pre: ({ children }) => (
+              <div style={{ 
+                background: '#f6f8fa', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                overflow: 'auto',
+                margin: '12px 0'
+              }}>
+                <pre style={{ margin: 0 }}>{children}</pre>
+              </div>
+            ),
+            code: ({ children, className }) => {
+              const inline = !className
+              return inline ? (
+                <code style={{ 
+                  background: 'rgba(0, 0, 0, 0.06)', 
+                  padding: '2px 4px', 
+                  borderRadius: '4px',
+                  fontSize: '0.9em'
+                }}>{children}</code>
+              ) : (
+                <code className={className}>{children}</code>
+              )
+            },
+            table: ({ children }) => (
+              <div style={{ overflowX: 'auto', margin: '12px 0' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%' }}>{children}</table>
+              </div>
+            ),
+            tr: ({ children }) => <tr style={{ borderBottom: '1px solid #f0f0f0' }}>{children}</tr>,
+            th: ({ children }) => <th style={{ padding: '8px', background: '#fafafa', textAlign: 'left' }}>{children}</th>,
+            td: ({ children }) => <td style={{ padding: '8px' }}>{children}</td>,
+            ul: ({ children }) => <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>{children}</ul>,
+            ol: ({ children }) => <ol style={{ paddingLeft: '20px', margin: '8px 0' }}>{children}</ol>,
+            li: ({ children }) => <li style={{ marginBottom: '4px' }}>{children}</li>,
+            p: ({ children }) => <p style={{ marginBottom: '12px' }}>{children}</p>,
+            h1: ({ children }) => <h1 style={{ fontSize: '1.5em', fontWeight: 'bold', margin: '16px 0 8px' }}>{children}</h1>,
+            h2: ({ children }) => <h2 style={{ fontSize: '1.3em', fontWeight: 'bold', margin: '14px 0 8px' }}>{children}</h2>,
+            h3: ({ children }) => <h3 style={{ fontSize: '1.1em', fontWeight: 'bold', margin: '12px 0 8px' }}>{children}</h3>,
+            a: (props: { href?: string; children?: React.ReactNode }) => (
+              <a 
+                href={props.href} 
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (props.href) window.electronAPI.shell.openExternal(props.href)
+                }}
+              >
+                {props.children}
+              </a>
+            )
+          }}
+        >
+          {mainContent}
+        </ReactMarkdown>
+      </div>
+    </div>
+  )
+}
 
 interface AIAssistantDrawerProps {
   open: boolean
@@ -43,7 +156,22 @@ interface AIAssistantDrawerProps {
 export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onClose }) => {
   const { t, i18n } = useTranslation()
   const [loading, setLoading] = useState(false)
+  const [refreshingAI, setRefreshingAI] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+
+  // Listen for streaming tokens
+  useEffect(() => {
+    const cleanup = window.electronAPI.ai.onStreamToken((token) => {
+      setAnalysis(prev => {
+        if (!prev) return prev
+        const newInsights = [...prev.insights]
+        if (newInsights.length === 0) newInsights.push('')
+        newInsights[0] += token
+        return { ...prev, insights: newInsights }
+      })
+    })
+    return cleanup
+  }, [])
 
   const handleAnalyze = async () => {
     setLoading(true)
@@ -51,11 +179,27 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
       // Pass current language to the analyzer
       const result = await window.electronAPI.ai.analyze(i18n.language as 'en-US' | 'zh-CN')
       setAnalysis(result)
-    } catch (error) {
-      console.error('Analysis failed:', error)
+    } catch {
+      console.error('Analysis failed')
       message.error(t('errors.unknown', 'Analysis failed'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRefreshAI = async () => {
+    if (!analysis) return
+    setRefreshingAI(true)
+    try {
+      // Pass true for useCache to skip scanning
+      const result = await window.electronAPI.ai.analyze(i18n.language as 'en-US' | 'zh-CN', true)
+      setAnalysis(result)
+      message.success(t('ai.refreshed', 'AI recommendations refreshed'))
+    } catch {
+      console.error('Refresh failed')
+      message.error(t('errors.unknown', 'Refresh failed'))
+    } finally {
+      setRefreshingAI(false)
     }
   }
 
@@ -302,6 +446,16 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
                     <span>{t('ai.insights', 'AI Deep Analysis')}</span>
                   </Space>
                 }
+                extra={
+                  <Tooltip title={t('ai.refresh', 'Regenerate Suggestions')}>
+                    <Button 
+                      type="text" 
+                      icon={<ReloadOutlined spin={refreshingAI} />} 
+                      onClick={handleRefreshAI} 
+                      disabled={refreshingAI}
+                    />
+                  </Tooltip>
+                }
                 size="small"
               >
                 <Collapse ghost defaultActiveKey={['0']}>
@@ -310,9 +464,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
                       header={`${t('ai.insightDetail', 'Analysis')} ${index + 1}`} 
                       key={index}
                     >
-                      <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-                        {insight}
-                      </Paragraph>
+                      <AIInsightContent content={insight} />
                     </Panel>
                   ))}
                 </Collapse>

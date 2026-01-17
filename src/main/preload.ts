@@ -60,10 +60,11 @@ interface ElectronAPI {
 
   // AI Assistant API
   ai: {
-    analyze: (language?: 'en-US' | 'zh-CN') => Promise<AnalysisResult>
+    analyze: (language?: 'en-US' | 'zh-CN', useCache?: boolean) => Promise<AnalysisResult>
     updateConfig: (config: AIConfig) => Promise<void>
     fetchModels: () => Promise<string[]>
     testConnection: (config: AIConfig) => Promise<{ success: boolean; message: string }>
+    onStreamToken: (callback: (token: string) => void) => () => void
   }
 
   // Shell API (for opening paths, URLs, and executing commands)
@@ -159,10 +160,17 @@ const electronAPI: ElectronAPI = {
 
   // AI Assistant API
   ai: {
-    analyze: (language?: 'en-US' | 'zh-CN') => ipcRenderer.invoke('ai:analyze', language),
+    analyze: (language?: 'en-US' | 'zh-CN', useCache: boolean = false) => ipcRenderer.invoke('ai:analyze', language, useCache),
     updateConfig: (config: AIConfig) => ipcRenderer.invoke('ai:update-config', config),
     fetchModels: () => ipcRenderer.invoke('ai:fetch-models'),
-    testConnection: (config: AIConfig) => ipcRenderer.invoke('ai:test-connection', config)
+    testConnection: (config: AIConfig) => ipcRenderer.invoke('ai:test-connection', config),
+    onStreamToken: (callback: (token: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, token: string) => callback(token)
+      ipcRenderer.on('ai:stream-token', handler)
+      return () => {
+        ipcRenderer.removeListener('ai:stream-token', handler)
+      }
+    }
   },
 
   // Shell API
