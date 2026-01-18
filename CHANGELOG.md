@@ -5,7 +5,30 @@ All notable changes to Dev Janitor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - 2026-01-17
+## [1.5.0] - 2026-01-18
+
+### Added
+
+#### Theme Mode Support
+- **Light/Dark/System themes**: Full theme mode support with Ant Design token system
+- **Theme Selector**: New settings component for easy theme switching
+- **System Follow**: Automatically matches OS theme preference
+- **Persistent Theme**: Theme preference saved across sessions
+
+#### Bug Fixes
+- **Package Version Cache**: Fixed version check state being lost when switching tabs or updating packages
+  - Moved version cache from component state to global store
+  - Version check results now persist across page navigation
+- **CSP Fix**: Added `'unsafe-inline'` to script-src for Vite HMR compatibility in development
+
+### Changed
+- Migrated all hardcoded colors to Ant Design theme tokens for consistent theming
+- Improved text alignment consistency across Settings components
+- Updated OpenAI connect-src to support more API endpoints
+
+---
+
+## [1.4.0] - 2026-01-17
 
 ### Added
 
@@ -205,9 +228,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned Features
 - [x] Package update notifications
 - [x] Tool update functionality (npm/pip)
+- [x] Dark mode support
 - [ ] Custom tool detection rules
 - [ ] Export/import configuration
-- [ ] Dark mode support
 - [ ] System tray integration
 - [ ] Keyboard shortcuts
 - [ ] Plugin system for additional tools
@@ -218,6 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.5.0]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.5.0
+[1.4.0]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.4.0
 [1.3.0]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.3.0
 [1.2.0]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.2.0
 [1.1.0]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.1.0

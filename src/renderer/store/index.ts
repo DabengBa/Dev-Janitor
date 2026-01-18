@@ -17,6 +17,14 @@ import i18n from '../i18n'
 // State Interface
 // ============================================================================
 
+// Version check cache type
+interface VersionInfo {
+  latest: string
+  checking: boolean
+  checked: boolean
+  updating?: boolean
+}
+
 interface AppState {
   // Tools
   tools: ToolInfo[]
@@ -29,6 +37,9 @@ interface AppState {
   composerPackages: PackageInfo[]
   packagesLoading: boolean
   packagesError: string | null
+  
+  // Package version cache (persisted)
+  packageVersionCache: Record<string, VersionInfo>
   
   // Services
   runningServices: RunningService[]
@@ -76,6 +87,8 @@ interface AppState {
   setComposerPackages: (packages: PackageInfo[]) => void
   setPackagesLoading: (loading: boolean) => void
   setPackagesError: (error: string | null) => void
+  setPackageVersionCache: (cache: Record<string, VersionInfo>) => void
+  updatePackageVersionInfo: (packageName: string, info: Partial<VersionInfo>) => void
   setRunningServices: (services: RunningService[]) => void
   setServicesLoading: (loading: boolean) => void
   setServicesError: (error: string | null) => void
@@ -114,6 +127,9 @@ export const useAppStore = create<AppState>()(
       composerPackages: [],
       packagesLoading: false,
       packagesError: null,
+      
+      // Package version cache
+      packageVersionCache: {},
       
       // Services
       runningServices: [],
@@ -346,6 +362,16 @@ export const useAppStore = create<AppState>()(
       setComposerPackages: (packages: PackageInfo[]) => set({ composerPackages: validatePackageArray(packages, 'composer') }),
       setPackagesLoading: (loading: boolean) => set({ packagesLoading: loading }),
       setPackagesError: (error: string | null) => set({ packagesError: error }),
+      setPackageVersionCache: (cache: Record<string, VersionInfo>) => set({ packageVersionCache: cache }),
+      updatePackageVersionInfo: (packageName: string, info: Partial<VersionInfo>) => {
+        const { packageVersionCache } = get()
+        set({
+          packageVersionCache: {
+            ...packageVersionCache,
+            [packageName]: { ...packageVersionCache[packageName], ...info } as VersionInfo
+          }
+        })
+      },
       setRunningServices: (services: RunningService[]) => set({ runningServices: services }),
       setServicesLoading: (loading: boolean) => set({ servicesLoading: loading }),
       setServicesError: (error: string | null) => set({ servicesError: error }),

@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.4.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.5.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT%20with%20Commons%20Clause-green.svg" alt="License">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/electron-33.3.1-9feaf9.svg" alt="Electron">
@@ -91,6 +91,16 @@ Dev Janitor is a powerful desktop application designed to help developers detect
 - **Easy Switching**: Change language instantly from settings
 - **System Detection**: Automatically detects system language on first launch
 
+### 🎨 Theme Support (NEW!)
+- **Light Mode**: Clean, bright interface
+- **Dark Mode**: Easy on the eyes for night coding
+- **System Follow**: Automatically matches your OS theme preference
+
+### 🔄 Auto Update
+- **Automatic Check**: Checks for updates on startup
+- **One-Click Update**: Download and install updates with a single click
+- **Progress Tracking**: Real-time download progress display
+
 ### 💻 Cross-Platform
 - **Windows**: Full support for Windows 10/11
 - **macOS**: Native support for macOS 10.15+
@@ -112,9 +122,9 @@ Download the latest release for your platform from the [Releases](https://github
 
 | Platform | Download |
 |----------|----------|
-| Windows | `Dev-Janitor-Setup-1.4.0.exe` |
-| macOS | `Dev-Janitor-1.4.0.dmg` |
-| Linux | `Dev-Janitor-1.4.0.AppImage` |
+| Windows | `Dev-Janitor-Setup-1.5.0.exe` |
+| macOS | `Dev-Janitor-1.5.0.dmg` |
+| Linux | `Dev-Janitor-1.5.0.AppImage` |
 
 ### Build from Source
 
@@ -215,9 +225,10 @@ Explore your system's environment configuration:
 
 Customize your experience:
 
-1. **Language**: Switch between English and Chinese
-2. **AI Config**: Configure OpenAI API Key for AI-powered analysis
-3. **About**: View application version, license, and contact information
+1. **Theme**: Switch between Light, Dark, or System-follow mode
+2. **Language**: Switch between English and Chinese
+3. **AI Config**: Configure OpenAI API Key for AI-powered analysis
+4. **About**: View application version, license, and contact information
 
 ## Development
 

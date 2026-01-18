@@ -8,7 +8,7 @@
  * - Copy and link actions only (safe operations)
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useRef } from 'react'
 import { Table, Button, Typography, Tooltip, message, Tag, Space, Progress } from 'antd'
 import {
   LinkOutlined,
@@ -21,6 +21,7 @@ import {
   StopOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useAppStore } from '../../store'
 import type { PackageInfo } from '@shared/types'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -32,13 +33,6 @@ export interface PackageTableProps {
   onUninstall: (packageName: string) => void
   onRefresh: () => void
   manager: 'npm' | 'pip' | 'composer'
-}
-
-interface VersionInfo {
-  latest: string
-  checking: boolean
-  checked: boolean
-  updating?: boolean
 }
 
 /**
@@ -81,7 +75,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
   manager,
 }) => {
   const { t } = useTranslation()
-  const [versionCache, setVersionCache] = useState<Record<string, VersionInfo>>({})
+  const { packageVersionCache, updatePackageVersionInfo } = useAppStore()
   const [checkingAll, setCheckingAll] = useState(false)
   
   // Progress state for version check - Validates: Requirements 8.1, 8.2, 8.4
@@ -96,18 +90,13 @@ const PackageTable: React.FC<PackageTableProps> = ({
   // Validates: Requirement 7.1
   const memoizedVersionComparison = useMemo(() => {
     return packages.reduce((acc, pkg) => {
-      const cached = versionCache[pkg.name];
+      const cached = packageVersionCache[pkg.name];
       if (cached?.checked && cached.latest) {
         acc[pkg.name] = compareVersions(pkg.version, cached.latest);
       }
       return acc;
     }, {} as Record<string, number>);
-  }, [packages, versionCache]);
-
-  // Reset cache when packages change
-  useEffect(() => {
-    setVersionCache({})
-  }, [packages])
+  }, [packages, packageVersionCache]);
 
   // Validates: Requirement 7.2
   const handleCopyLocation = useCallback((location: string) => {
@@ -151,10 +140,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       return
     }
 
-    setVersionCache(prev => ({
-      ...prev,
-      [packageName]: { ...prev[packageName], updating: true }
-    }))
+    updatePackageVersionInfo(packageName, { updating: true })
 
     try {
       const result = await window.electronAPI.packages.update(packageName, manager)
@@ -162,32 +148,23 @@ const PackageTable: React.FC<PackageTableProps> = ({
       if (result.success) {
         message.success(t('packages.updateSuccess', 'Package updated successfully'))
         // Update the version cache to show as latest
-        setVersionCache(prev => ({
-          ...prev,
-          [packageName]: { 
-            latest: result.newVersion || prev[packageName]?.latest || '', 
-            checking: false, 
-            checked: true,
-            updating: false 
-          }
-        }))
+        updatePackageVersionInfo(packageName, { 
+          latest: result.newVersion || packageVersionCache[packageName]?.latest || '', 
+          checking: false, 
+          checked: true,
+          updating: false 
+        })
         // Trigger a refresh to update the package list
         onRefresh()
       } else {
         message.error(result.error || t('packages.updateFailed', 'Failed to update package'))
-        setVersionCache(prev => ({
-          ...prev,
-          [packageName]: { ...prev[packageName], updating: false }
-        }))
+        updatePackageVersionInfo(packageName, { updating: false })
       }
     } catch (error) {
       message.error(t('packages.updateFailed', 'Failed to update package'))
-      setVersionCache(prev => ({
-        ...prev,
-        [packageName]: { ...prev[packageName], updating: false }
-      }))
+      updatePackageVersionInfo(packageName, { updating: false })
     }
-  }, [manager, t, onRefresh])
+  }, [manager, t, onRefresh, updatePackageVersionInfo, packageVersionCache])
 
   // Validates: Requirement 7.2
   const handleOpenExternal = useCallback((packageName: string) => {
@@ -205,10 +182,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       return
     }
 
-    setVersionCache(prev => ({
-      ...prev,
-      [packageName]: { latest: '', checking: true, checked: false }
-    }))
+    updatePackageVersionInfo(packageName, { latest: '', checking: true, checked: false })
 
     try {
       let result = null
@@ -219,23 +193,14 @@ const PackageTable: React.FC<PackageTableProps> = ({
       }
       
       if (result) {
-        setVersionCache(prev => ({
-          ...prev,
-          [packageName]: { latest: result.latest, checking: false, checked: true }
-        }))
+        updatePackageVersionInfo(packageName, { latest: result.latest, checking: false, checked: true })
       } else {
-        setVersionCache(prev => ({
-          ...prev,
-          [packageName]: { latest: t('common.unknown', 'Unknown'), checking: false, checked: true }
-        }))
+        updatePackageVersionInfo(packageName, { latest: t('common.unknown', 'Unknown'), checking: false, checked: true })
       }
     } catch (error) {
-      setVersionCache(prev => ({
-        ...prev,
-        [packageName]: { latest: t('packages.checkFailed', 'Check failed'), checking: false, checked: true }
-      }))
+      updatePackageVersionInfo(packageName, { latest: t('packages.checkFailed', 'Check failed'), checking: false, checked: true })
     }
-  }, [manager, t])
+  }, [manager, t, updatePackageVersionInfo])
 
   // Validates: Requirements 7.2, 8.1, 8.2, 8.3, 8.4
   // Check all packages versions with progress tracking and cancellation support
@@ -289,7 +254,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
 
   // Render version status
   const renderVersionStatus = (record: PackageInfo) => {
-    const info = versionCache[record.name]
+    const info = packageVersionCache[record.name]
     const supportsCheck = manager === 'npm' || manager === 'pip'
     
     if (!supportsCheck) {
