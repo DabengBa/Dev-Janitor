@@ -864,7 +864,7 @@ export class AIAssistant {
       if (onToken) {
         // Streaming mode: Return immediately with empty insight, allow stream to populate
         insights.push('')
-        // Run AI in background
+        // Run AI in background with proper error handling
         this.aiAnalyzer.analyzeWithAI(
           tools,
           packages,
@@ -873,7 +873,14 @@ export class AIAssistant {
           onToken
         ).catch(error => {
           console.error('AI Analysis stream failed:', error)
-          onToken(isZhCN ? `\n\n[AI 分析出错: ${(error as Error).message}]` : `\n\n[AI Analysis Error: ${(error as Error).message}]`)
+          const errorMsg = isZhCN ? `\n\n[AI 分析出错: ${(error as Error).message}]` : `\n\n[AI Analysis Error: ${(error as Error).message}]`
+          try {
+            onToken(errorMsg)
+          } catch (tokenError) {
+            console.error('Failed to send error token:', tokenError)
+          }
+          // Re-throw to ensure promise rejection is visible
+          throw error
         })
       } else {
         // Standard mode: Await result

@@ -9,7 +9,7 @@
  * Validates: Requirements 1.2-1.9, 2.1-2.5
  */
 
-import { ToolInfo, DetectionSummary } from '../shared/types'
+import { ToolInfo, DetectionSummary, CommandResult } from '../shared/types'
 import {
   CommandExecutor,
   commandExecutor,
@@ -212,6 +212,20 @@ export function parseVersion(output: string): ParsedVersion {
 }
 
 /**
+ * Get version output from a command result.
+ * Prefer stdout, fallback to stderr (some tools print version to stderr).
+ */
+function getVersionOutput(result: Pick<CommandResult, 'stdout' | 'stderr'>): string {
+  if (result.stdout && result.stdout.trim()) {
+    return result.stdout
+  }
+  if (result.stderr && result.stderr.trim()) {
+    return result.stderr
+  }
+  return ''
+}
+
+/**
  * Determine the installation method based on the tool path
  * 
  * @param path The installation path of the tool
@@ -316,7 +330,7 @@ export class DetectionEngine {
   /**
    * Search Windows fallback paths for a tool
    * Validates: Requirement 2.5
-   * 
+   *
    * @param tool The tool to search for
    * @returns ToolInfo if found, null otherwise
    */
@@ -325,6 +339,10 @@ export class DetectionEngine {
 
     const paths = WindowsFallbackPaths[tool]
     if (!paths) return null
+
+    const fs = await import('fs')
+    const fsPromises = fs.promises
+    const path = await import('path')
 
     for (const pathTemplate of paths) {
       // Expand environment variables
@@ -336,34 +354,42 @@ export class DetectionEngine {
 
       // Try to find executable in this path
       try {
-        const fs = await import('fs')
-        const path = await import('path')
+        // Check if path exists using async
+        try {
+          await fsPromises.access(expandedPath)
+        } catch {
+          continue
+        }
 
-        if (fs.existsSync(expandedPath)) {
-          const files = fs.readdirSync(expandedPath)
-          for (const file of files) {
-            const fullPath = path.join(expandedPath, file)
-            const stat = fs.statSync(fullPath)
+        const files = await fsPromises.readdir(expandedPath)
+        for (const file of files) {
+          const fullPath = path.join(expandedPath, file)
+          const stat = await fsPromises.stat(fullPath)
 
-            if (stat.isDirectory()) {
-              // Check subdirectory for executable
-              const exeName = tool === 'python' ? 'python.exe' : `${tool}.exe`
-              const exePath = path.join(fullPath, exeName)
-              if (fs.existsSync(exePath)) {
-                // Found the executable, get version
-                const versionResult = await this.executor.executeSafe(`"${exePath}" --version`)
-                if (versionResult.success) {
-                  const { version } = parseVersion(versionResult.stdout)
-                  return {
-                    name: tool,
-                    displayName: tool.charAt(0).toUpperCase() + tool.slice(1),
-                    version,
-                    path: exePath,
-                    isInstalled: true,
-                    installMethod: 'manual',
-                    category: 'runtime',
-                  }
-                }
+          if (stat.isDirectory()) {
+            // Check subdirectory for executable
+            const exeName = tool === 'python' ? 'python.exe' : `${tool}.exe`
+            const exePath = path.join(fullPath, exeName)
+
+            // Check if executable exists
+            try {
+              await fsPromises.access(exePath)
+            } catch {
+              continue
+            }
+
+            // Found the executable, get version
+            const versionResult = await this.executor.executeSafe(`"${exePath}" --version`)
+            if (versionResult.success) {
+              const { version } = parseVersion(getVersionOutput(versionResult))
+              return {
+                name: tool,
+                displayName: tool.charAt(0).toUpperCase() + tool.slice(1),
+                version,
+                path: exePath,
+                isInstalled: true,
+                installMethod: 'manual',
+                category: 'runtime',
               }
             }
           }
@@ -395,7 +421,7 @@ export class DetectionEngine {
         return createUnavailableTool(name, displayName, category)
       }
 
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
 
       // Get path
       const path = await this.executor.getToolPath('node')
@@ -432,7 +458,7 @@ export class DetectionEngine {
         return createUnavailableTool(name, displayName, category)
       }
 
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
       const path = await this.executor.getToolPath('npm')
 
       return {
@@ -488,7 +514,7 @@ export class DetectionEngine {
         return createUnavailableTool(name, displayName, category)
       }
 
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
       const path = await this.executor.getToolPath(pythonCmd)
 
       return {
@@ -538,7 +564,7 @@ export class DetectionEngine {
       }
 
       // pip version output: "pip 23.2.1 from /path/to/pip (python 3.11)"
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
 
       // For 'py -m pip', get the path of py instead
       const pathCmd = pipCmd === 'py -m pip' ? 'py' : pipCmd.split(' ')[0]
@@ -577,7 +603,7 @@ export class DetectionEngine {
       }
 
       // PHP version output: "PHP 8.2.0 (cli) ..."
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
       const path = await this.executor.getToolPath('php')
 
       return {
@@ -613,7 +639,7 @@ export class DetectionEngine {
       }
 
       // Composer version output: "Composer version 2.5.8 2023-06-09 17:13:21"
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
       const path = await this.executor.getToolPath('composer')
 
       return {
@@ -656,7 +682,7 @@ export class DetectionEngine {
         return createUnavailableTool(name, display, category)
       }
 
-      const { version } = parseVersion(versionResult.stdout)
+      const { version } = parseVersion(getVersionOutput(versionResult))
       const path = await this.executor.getToolPath(command)
 
       return {

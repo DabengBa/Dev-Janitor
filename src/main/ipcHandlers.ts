@@ -185,9 +185,16 @@ function registerPackagesHandlers(): void {
   // Check npm package latest version from registry
   ipcMain.handle('packages:check-npm-latest', async (_event, packageName: string): Promise<{ name: string; latest: string } | null> => {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
         return null
       }
@@ -205,9 +212,16 @@ function registerPackagesHandlers(): void {
   // Check pip package latest version from PyPI
   ipcMain.handle('packages:check-pip-latest', async (_event, packageName: string): Promise<{ name: string; latest: string } | null> => {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       const response = await fetch(`https://pypi.org/pypi/${packageName}/json`, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
         return null
       }
@@ -363,15 +377,26 @@ function registerAIHandlers(): void {
       if (useCache && cachedEnvironmentData) {
         ({ tools, packages, services, environment } = cachedEnvironmentData)
       } else {
-        // Gather all data
-        tools = await detectionEngine.detectAllTools()
-        const npmPackages = await packageManager.listNpmPackages()
-        const pipPackages = await packageManager.listPipPackages()
-        const composerPackages = await packageManager.listComposerPackages()
+        // Gather all data in parallel for better performance
+        const [
+          toolsResult,
+          npmPackages,
+          pipPackages,
+          composerPackages,
+          servicesResult,
+        ] = await Promise.all([
+          detectionEngine.detectAllTools(),
+          packageManager.listNpmPackages(),
+          packageManager.listPipPackages(),
+          packageManager.listComposerPackages(),
+          serviceMonitor.listRunningServices(),
+        ])
+
+        tools = toolsResult
         packages = [...npmPackages, ...pipPackages, ...composerPackages]
-        services = await serviceMonitor.listRunningServices()
+        services = servicesResult
         environment = environmentScanner.getAllEnvironmentVariables()
-        
+
         // Update cache
         cachedEnvironmentData = { tools, packages, environment, services }
       }
@@ -483,6 +508,24 @@ function registerShellHandlers(): void {
   // Open external URL in default browser
   ipcMain.handle('shell:open-external', async (_event, url: string): Promise<void> => {
     try {
+      // Validate URL to prevent malicious schemes
+      if (!url || typeof url !== 'string') {
+        throw new Error('Invalid URL provided')
+      }
+
+      // Only allow http and https protocols
+      const urlLower = url.toLowerCase().trim()
+      if (!urlLower.startsWith('http://') && !urlLower.startsWith('https://')) {
+        throw new Error('Only HTTP and HTTPS URLs are allowed')
+      }
+
+      // Additional validation: parse URL to ensure it's valid
+      try {
+        new URL(url)
+      } catch {
+        throw new Error('Malformed URL')
+      }
+
       await shell.openExternal(url)
     } catch (error) {
       console.error('Error opening external URL:', error)

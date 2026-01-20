@@ -198,21 +198,21 @@ describe('PathScanner', () => {
   })
 
   describe('scanDirectory', () => {
-    it('should return an array', () => {
-      const result = scanDirectory('/nonexistent/path')
+    it('should return an array', async () => {
+      const result = await scanDirectory('/nonexistent/path')
       expect(Array.isArray(result)).toBe(true)
     })
 
-    it('should return empty array for non-existent directory', () => {
-      const result = scanDirectory('/definitely/not/a/real/path/12345')
+    it('should return empty array for non-existent directory', async () => {
+      const result = await scanDirectory('/definitely/not/a/real/path/12345')
       expect(result).toEqual([])
     })
 
-    it('should scan existing directories', () => {
+    it('should scan existing directories', async () => {
       // Scan a directory that should exist on most systems
       const testDir = isWindows() ? 'C:\\Windows\\System32' : '/usr/bin'
-      const result = scanDirectory(testDir)
-      
+      const result = await scanDirectory(testDir)
+
       // Should find at least some executables in system directories
       // (may be empty if permissions don't allow)
       expect(Array.isArray(result)).toBe(true)
@@ -224,14 +224,14 @@ describe('PathScanner', () => {
      * Feature: dev-tools-manager, Property 12: PATH Scanning Completeness
      * **Validates: Requirements 9.1**
      */
-    it('should return an array of executables', () => {
-      const executables = scanAllPathDirectories()
+    it('should return an array of executables', async () => {
+      const executables = await scanAllPathDirectories()
       expect(Array.isArray(executables)).toBe(true)
     })
 
-    it('should have valid structure for each executable', () => {
-      const executables = scanAllPathDirectories()
-      
+    it('should have valid structure for each executable', async () => {
+      const executables = await scanAllPathDirectories()
+
       for (const exec of executables) {
         expect(exec).toHaveProperty('name')
         expect(exec).toHaveProperty('path')
@@ -243,9 +243,9 @@ describe('PathScanner', () => {
     })
 
     // Property-based test: all executables should have non-empty properties
-    it('Property 12: all executables should have valid non-empty properties', () => {
-      const executables = scanAllPathDirectories()
-      
+    it('Property 12: all executables should have valid non-empty properties', async () => {
+      const executables = await scanAllPathDirectories()
+
       for (const exec of executables) {
         expect(exec.name.length).toBeGreaterThan(0)
         expect(exec.path.length).toBeGreaterThan(0)

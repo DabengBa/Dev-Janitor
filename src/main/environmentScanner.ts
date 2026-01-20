@@ -14,7 +14,7 @@
 
 import { EnvironmentVariable } from '../shared/types'
 import { isWindows, normalizePath } from './commandExecutor'
-import fs from 'node:fs'
+import { promises as fsPromises } from 'node:fs'
 
 /**
  * Keywords used to categorize environment variables
@@ -279,38 +279,40 @@ export function searchVariables(query: string): EnvironmentVariable[] {
 
 /**
  * Analyze PATH for potential issues
- * 
- * @returns Object containing PATH analysis results
+ *
+ * @returns Promise resolving to object containing PATH analysis results
  */
-export function analyzePathEntries(): {
+export async function analyzePathEntries(): Promise<{
   entries: string[]
   duplicates: string[]
   nonExistent: string[]
   totalCount: number
   uniqueCount: number
-} {
+}> {
   const entries = getPathEntries()
   const duplicates = findDuplicatePathEntries()
-  
-  // Check for non-existent directories
-  const nonExistent: string[] = []
-  
-  for (const entry of entries) {
-    try {
-      if (!fs.existsSync(entry)) {
-        nonExistent.push(entry)
+
+  // Check for non-existent directories in parallel
+  const existenceChecks = await Promise.all(
+    entries.map(async (entry) => {
+      try {
+        await fsPromises.access(entry)
+        return { entry, exists: true }
+      } catch {
+        return { entry, exists: false }
       }
-    } catch {
-      // If we can't check, assume it might not exist
-      nonExistent.push(entry)
-    }
-  }
-  
+    })
+  )
+
+  const nonExistent = existenceChecks
+    .filter(check => !check.exists)
+    .map(check => check.entry)
+
   // Calculate unique count
   const uniqueEntries = new Set(
     entries.map(e => isWindows() ? e.toLowerCase() : e)
   )
-  
+
   return {
     entries,
     duplicates,

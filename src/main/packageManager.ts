@@ -664,7 +664,7 @@ export async function getGlobalPath(
       // Cargo installs to ~/.cargo/bin
       command = isWindows()
         ? 'echo %USERPROFILE%\\.cargo\\bin'
-        : 'echo ~/.cargo/bin'
+        : 'echo $HOME/.cargo/bin'
       break
     case 'gem':
       command = 'gem environment gemdir'

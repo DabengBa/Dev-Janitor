@@ -88,7 +88,7 @@ interface AppState {
   setPackagesLoading: (loading: boolean) => void
   setPackagesError: (error: string | null) => void
   setPackageVersionCache: (cache: Record<string, VersionInfo>) => void
-  updatePackageVersionInfo: (packageName: string, info: Partial<VersionInfo>) => void
+  updatePackageVersionInfo: (cacheKey: string, info: Partial<VersionInfo>) => void
   setRunningServices: (services: RunningService[]) => void
   setServicesLoading: (loading: boolean) => void
   setServicesError: (error: string | null) => void
@@ -356,12 +356,17 @@ export const useAppStore = create<AppState>()(
       setPackagesLoading: (loading: boolean) => set({ packagesLoading: loading }),
       setPackagesError: (error: string | null) => set({ packagesError: error }),
       setPackageVersionCache: (cache: Record<string, VersionInfo>) => set({ packageVersionCache: cache }),
-      updatePackageVersionInfo: (packageName: string, info: Partial<VersionInfo>) => {
+      updatePackageVersionInfo: (cacheKey: string, info: Partial<VersionInfo>) => {
         const { packageVersionCache } = get()
+        const existing = packageVersionCache[cacheKey] || {
+          latest: '',
+          checking: false,
+          checked: false,
+        }
         set({
           packageVersionCache: {
             ...packageVersionCache,
-            [packageName]: { ...packageVersionCache[packageName], ...info } as VersionInfo
+            [cacheKey]: { ...existing, ...info } as VersionInfo
           }
         })
       },

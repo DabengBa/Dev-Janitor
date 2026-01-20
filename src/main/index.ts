@@ -22,6 +22,17 @@ import { registerAllIPCHandlers, cleanupIPCHandlers, areIPCHandlersRegistered } 
 import { initAutoUpdater, shouldEnableAutoUpdater } from './autoUpdater'
 import { cspManager } from './security'
 
+// Add process-level error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+  // Log but don't crash the app
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  // Log but don't crash the app
+})
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure

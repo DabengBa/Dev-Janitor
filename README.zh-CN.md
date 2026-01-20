@@ -112,9 +112,9 @@ Dev Janitor（开发清道夫）是一款功能强大的桌面应用程序，旨
 
 | 平台 | 下载 |
 |------|------|
-| Windows | `Dev-Janitor-Setup-1.5.4.exe` |
-| macOS | `Dev-Janitor-1.5.4.dmg` |
-| Linux | `Dev-Janitor-1.5.4.AppImage` |
+| Windows | `Dev-Janitor-Setup-1.6.0.exe` |
+| macOS | `Dev-Janitor-1.6.0.dmg` |
+| Linux | `Dev-Janitor-1.6.0.AppImage` |
 
 ### macOS 故障排除
 

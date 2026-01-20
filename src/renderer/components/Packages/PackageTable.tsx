@@ -67,6 +67,10 @@ const compareVersions = (v1: string, v2: string): number => {
   return 0
 }
 
+const VERSION_LIKE_PATTERN = /\d+\.\d+/
+
+const isVersionLike = (value: string): boolean => VERSION_LIKE_PATTERN.test(value)
+
 const PackageTable: React.FC<PackageTableProps> = ({
   packages,
   loading,
@@ -89,13 +93,14 @@ const PackageTable: React.FC<PackageTableProps> = ({
   // Validates: Requirement 7.1
   const memoizedVersionComparison = useMemo(() => {
     return packages.reduce<Record<string, number>>((acc, pkg) => {
-      const cached = packageVersionCache[pkg.name];
-      if (cached?.checked && cached.latest) {
-        acc[pkg.name] = compareVersions(pkg.version, cached.latest);
+      const cacheKey = `${manager}:${pkg.name}`
+      const cached = packageVersionCache[cacheKey]
+      if (cached?.checked && cached.latest && isVersionLike(cached.latest)) {
+        acc[pkg.name] = compareVersions(pkg.version, cached.latest)
       }
       return acc;
     }, {});
-  }, [packages, packageVersionCache]);
+  }, [packages, packageVersionCache, manager]);
 
   // Validates: Requirement 7.2
   const handleCopyLocation = useCallback((location: string) => {
@@ -139,7 +144,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
     // 防御性检查：确保 electronAPI.packages 存在
     if (!window.electronAPI?.packages) {
       console.error('Packages API not available')
-      updatePackageVersionInfo(packageName, {
+      updatePackageVersionInfo(`${manager}:${packageName}`, {
         latest: t('packages.checkFailed', 'Check failed'),
         checking: false,
         checked: true
@@ -148,21 +153,21 @@ const PackageTable: React.FC<PackageTableProps> = ({
     }
 
     // 标记为"检查中"
-    updatePackageVersionInfo(packageName, { latest: '', checking: true, checked: false })
+    updatePackageVersionInfo(`${manager}:${packageName}`, { latest: '', checking: true, checked: false })
 
     try {
       const result = manager === 'npm'
         ? await window.electronAPI.packages.checkNpmLatestVersion(packageName)
         : await window.electronAPI.packages.checkPipLatestVersion(packageName);
 
-      updatePackageVersionInfo(packageName, {
+      updatePackageVersionInfo(`${manager}:${packageName}`, {
         latest: result?.latest || t('common.unknown'),
         checking: false,
         checked: true
       })
     } catch (error) {
       console.error(`Failed to check version for ${packageName}:`, error)
-      updatePackageVersionInfo(packageName, { latest: 'error', checking: false, checked: true })
+      updatePackageVersionInfo(`${manager}:${packageName}`, { latest: 'error', checking: false, checked: true })
     }
   }, [manager, t, updatePackageVersionInfo])
 
@@ -176,7 +181,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       return
     }
 
-    updatePackageVersionInfo(packageName, { updating: true })
+    updatePackageVersionInfo(`${manager}:${packageName}`, { updating: true })
     try {
       const result = await window.electronAPI.packages.update(packageName, manager)
       if (result.success) {
@@ -190,7 +195,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       console.error(`Failed to update package ${packageName}:`, error)
       message.error(t('packages.updateFailed'))
     } finally {
-      updatePackageVersionInfo(packageName, { updating: false })
+      updatePackageVersionInfo(`${manager}:${packageName}`, { updating: false })
     }
   }, [manager, t, onRefresh, checkVersion, updatePackageVersionInfo])
 
@@ -199,10 +204,10 @@ const PackageTable: React.FC<PackageTableProps> = ({
    */
   const checkAllVersions = useCallback(async () => {
     if (manager !== 'npm' && manager !== 'pip') return;
-    
+
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
-    
+
     setCheckingAll(true);
     setCheckProgress({ total: packages.length, completed: 0, cancelled: false });
 
@@ -221,7 +226,10 @@ const PackageTable: React.FC<PackageTableProps> = ({
           await new Promise(resolve => setTimeout(resolve, 100));
         } finally {
           completedCount++;
-          setCheckProgress(prev => prev ? { ...prev, completed: completedCount } : null);
+          // Check if component is still mounted before updating state
+          if (!signal.aborted) {
+            setCheckProgress(prev => prev ? { ...prev, completed: completedCount } : null);
+          }
         }
       }
     };
@@ -236,13 +244,19 @@ const PackageTable: React.FC<PackageTableProps> = ({
     } catch (err) {
       console.error("Parallel check failed", err);
     } finally {
-      setCheckingAll(false);
-      if (signal.aborted) {
+      // Only update state if not aborted (component still mounted)
+      if (!signal.aborted) {
+        setCheckingAll(false);
+        // 任务结束后 2 秒自动隐藏进度条
+        setTimeout(() => {
+          if (!signal.aborted) {
+            setCheckProgress(null);
+          }
+        }, 2000);
+      } else {
+        setCheckingAll(false);
         setCheckProgress(prev => prev ? { ...prev, cancelled: true } : null);
       }
-      // 任务结束后 2 秒自动隐藏进度条
-      setTimeout(() => setCheckProgress(null), 2000);
-      abortControllerRef.current = null;
     }
   }, [manager, packages, checkVersion]);
 
@@ -264,7 +278,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       key: 'version',
       width: 250,
       render: (_, record) => {
-        const info = packageVersionCache[record.name];
+        const info = packageVersionCache[`${manager}:${record.name}`]
         const comparison = memoizedVersionComparison[record.name];
         const hasUpdate = comparison !== undefined && comparison < 0;
         const isLatest = comparison !== undefined && comparison >= 0;
@@ -315,7 +329,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
       width: 130,
       align: 'right',
       render: (_, record) => {
-        const info = packageVersionCache[record.name];
+        const info = packageVersionCache[`${manager}:${record.name}`]
         if (manager !== 'npm' && manager !== 'pip') return null;
 
         const comparison = memoizedVersionComparison[record.name] ?? 0;

@@ -169,7 +169,7 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
       columns={columns}
       dataSource={services}
       loading={loading}
-      rowKey="pid"
+      rowKey={(record) => `${record.pid}-${record.port ?? 'na'}`}
       size="middle"
       pagination={{
         pageSize: 20,

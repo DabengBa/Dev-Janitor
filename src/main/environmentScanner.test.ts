@@ -291,9 +291,9 @@ describe('EnvironmentScanner', () => {
       expect(Array.isArray(vars)).toBe(true)
     })
     
-    it('should analyze PATH entries', () => {
-      const analysis = scanner.analyzePathEntries()
-      
+    it('should analyze PATH entries', async () => {
+      const analysis = await scanner.analyzePathEntries()
+
       expect(analysis).toHaveProperty('entries')
       expect(analysis).toHaveProperty('duplicates')
       expect(analysis).toHaveProperty('nonExistent')

@@ -33,6 +33,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeSanitize from 'rehype-sanitize'
 import type { AnalysisResult, Issue, Suggestion } from '../../../shared/types'
 import { MarkdownErrorBoundary } from './index'
 
@@ -94,8 +95,9 @@ const AIInsightContent: React.FC<{ content: string }> = ({ content }) => {
             console.error('Markdown rendering error in AIAssistantDrawer:', error, errorInfo)
           }}
         >
-          <ReactMarkdown 
+          <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeSanitize]}
             components={{
               pre: ({ children }: { children?: React.ReactNode }) => (
                 <div style={{ 
@@ -242,7 +244,10 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
       // Ignore AbortError (Requirement 4.3)
       if (error instanceof Error && error.name === 'AbortError') return
       console.error('Analysis failed')
-      message.error(t('errors.unknown', 'Analysis failed'))
+      // Only show message if component is still mounted
+      if (isMountedRef.current) {
+        message.error(t('errors.unknown', 'Analysis failed'))
+      }
     } finally {
       if (isMountedRef.current) {
         setLoading(false)
@@ -270,14 +275,20 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
       // Don't update state if component is unmounted (Requirement 4.1)
       if (!isMountedRef.current) return
       setAnalysis(result)
-      message.success(t('ai.refreshed', 'AI recommendations refreshed'))
+      // Only show message if component is still mounted
+      if (isMountedRef.current) {
+        message.success(t('ai.refreshed', 'AI recommendations refreshed'))
+      }
     } catch (error) {
       // Don't update state if component is unmounted
       if (!isMountedRef.current) return
       // Ignore AbortError (Requirement 4.3)
       if (error instanceof Error && error.name === 'AbortError') return
       console.error('Refresh failed')
-      message.error(t('errors.unknown', 'Refresh failed'))
+      // Only show message if component is still mounted
+      if (isMountedRef.current) {
+        message.error(t('errors.unknown', 'Refresh failed'))
+      }
     } finally {
       if (isMountedRef.current) {
         setRefreshingAI(false)
