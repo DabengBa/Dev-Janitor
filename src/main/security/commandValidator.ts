@@ -69,9 +69,10 @@ export const ALLOWED_COMMANDS: readonly string[] = [
 
 /**
  * 危险字符模式 - 防止命令注入
- * 包括: ; | & ` $ ( ) { } [ ] < > \ ' "
+ * 包括: ; | & ` $ ( ) { } [ ] < > \ ' " 以及换行符和回车符
+ * 也检测 Unicode 控制字符和零宽字符
  */
-export const DANGEROUS_PATTERNS = /[;&|`$(){}[\]<>\\'"]/;
+export const DANGEROUS_PATTERNS = /[;&|`$(){}[\]<>\\'"\n\r\t\x00-\x1F\x7F\u200B-\u200D\uFEFF]/;
 
 /**
  * Command Validator 实现

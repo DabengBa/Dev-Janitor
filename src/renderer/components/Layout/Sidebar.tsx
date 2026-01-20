@@ -1,13 +1,13 @@
 /**
  * Sidebar Component
- * 
+ *
  * Navigation sidebar with menu items for different views:
  * - Tools
  * - Packages
  * - Services
  * - Environment
  * - Settings
- * 
+ *
  * Validates: Requirements 5.1, 5.2
  */
 
@@ -120,4 +120,5 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
   )
 }
 
-export default Sidebar
+// Wrap with React.memo to prevent unnecessary re-renders
+export default React.memo(Sidebar)

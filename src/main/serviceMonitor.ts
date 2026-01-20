@@ -157,8 +157,7 @@ async function getUnixProcessInfo(pid: number): Promise<{ name: string; command:
  */
 async function listWindowsServices(): Promise<RunningService[]> {
   const services: RunningService[] = []
-  const seenPids = new Set<number>()
-  const pidPortMap = new Map<number, number>()
+  const pidPorts = new Map<number, Set<number>>()
   
   // Get listening ports with PIDs
   const netstatResult = await executeSafe('netstat -ano -p TCP')
@@ -173,7 +172,7 @@ async function listWindowsServices(): Promise<RunningService[]> {
   for (const line of lines) {
     const parsed = parseNetstatLine(line)
     
-    if (!parsed || seenPids.has(parsed.pid)) {
+    if (!parsed) {
       continue
     }
     
@@ -182,12 +181,13 @@ async function listWindowsServices(): Promise<RunningService[]> {
       continue
     }
     
-    seenPids.add(parsed.pid)
-    pidPortMap.set(parsed.pid, parsed.port)
+    const ports = pidPorts.get(parsed.pid) || new Set<number>()
+    ports.add(parsed.port)
+    pidPorts.set(parsed.pid, ports)
   }
   
   // Batch get all process names in one call
-  const pids = Array.from(pidPortMap.keys())
+  const pids = Array.from(pidPorts.keys())
   if (pids.length === 0) return services
   
   // Get all process names at once using tasklist (much faster than individual calls)
@@ -210,7 +210,7 @@ async function listWindowsServices(): Promise<RunningService[]> {
   }
   
   // Build services list (skip wmic calls for better performance)
-  for (const [pid, port] of pidPortMap) {
+  for (const [pid, ports] of pidPorts) {
     const name = processNameMap.get(pid)
     if (name) {
       // Update cache (timestamp handled internally by BoundedLRUCache)
@@ -218,13 +218,15 @@ async function listWindowsServices(): Promise<RunningService[]> {
         name,
         command: name, // Use name as command to avoid wmic calls
       })
-      
-      services.push({
-        pid,
-        name,
-        port,
-        command: name,
-      })
+
+      for (const port of ports) {
+        services.push({
+          pid,
+          name,
+          port,
+          command: name,
+        })
+      }
     }
   }
   
@@ -239,7 +241,8 @@ async function listWindowsServices(): Promise<RunningService[]> {
  */
 async function listUnixServices(): Promise<RunningService[]> {
   const services: RunningService[] = []
-  const seenPids = new Set<number>()
+  const seen = new Set<string>()
+  const processInfoByPid = new Map<number, { name: string; command: string } | null>()
   
   // Get listening ports with process info
   const lsofResult = await executeSafe('lsof -i -P -n | grep LISTEN')
@@ -258,14 +261,22 @@ async function listUnixServices(): Promise<RunningService[]> {
   for (const line of lines) {
     const parsed = parseLsofLine(line)
     
-    if (!parsed || seenPids.has(parsed.pid)) {
+    if (!parsed) {
       continue
     }
     
-    seenPids.add(parsed.pid)
+    const key = `${parsed.pid}:${parsed.port}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
     
     // Get full process info
-    const processInfo = await getUnixProcessInfo(parsed.pid)
+    let processInfo = processInfoByPid.get(parsed.pid)
+    if (!processInfoByPid.has(parsed.pid)) {
+      processInfo = await getUnixProcessInfo(parsed.pid)
+      processInfoByPid.set(parsed.pid, processInfo)
+    }
     
     services.push({
       pid: parsed.pid,
@@ -287,7 +298,7 @@ async function listUnixServices(): Promise<RunningService[]> {
  */
 function parseSSOutput(output: string): RunningService[] {
   const services: RunningService[] = []
-  const seenPids = new Set<number>()
+  const seen = new Set<string>()
   const lines = output.split('\n')
   
   for (const line of lines) {
@@ -305,8 +316,9 @@ function parseSSOutput(output: string): RunningService[] {
     const name = processMatch[1]
     const pid = parseInt(processMatch[2], 10)
     
-    if (seenPids.has(pid)) continue
-    seenPids.add(pid)
+    const key = `${pid}:${port}`
+    if (seen.has(key)) continue
+    seen.add(key)
     
     services.push({
       pid,
@@ -457,7 +469,7 @@ export class ServiceMonitor {
       }, CLEANUP_INTERVAL)
     }
   }
-  
+
   /**
    * Stop auto-monitoring
    */
@@ -466,35 +478,28 @@ export class ServiceMonitor {
       clearInterval(this.monitoringInterval)
       this.monitoringInterval = null
     }
-    
-    // Stop cache cleanup
+
+    // Clear cache cleanup interval to prevent memory leak
     if (this.cacheCleanupInterval) {
       clearInterval(this.cacheCleanupInterval)
       this.cacheCleanupInterval = null
     }
-    
-    // Clear debounce timeout - Validates: Requirement 6.1
-    if (this.debounceTimeout) {
-      clearTimeout(this.debounceTimeout)
-      this.debounceTimeout = null
-    }
-    this.pendingUpdate = false
   }
-  
+
   /**
    * Debounced notify - merges multiple updates within DEBOUNCE_MS into one
-   * 
+   *
    * Validates: Requirement 6.1 (merge updates within 500ms)
    * Validates: Requirement 6.2 (batch send updates)
    * @param services The services to notify listeners about
    */
   private debouncedNotify(services: RunningService[]): void {
     this.pendingUpdate = true
-    
+
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
-    
+
     this.debounceTimeout = setTimeout(() => {
       if (this.pendingUpdate) {
         this.notifyListeners(services)

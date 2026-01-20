@@ -137,53 +137,79 @@ function setupUpdateEvents(mainWindow: BrowserWindow): void {
 /**
  * Set up IPC handlers for update-related actions from renderer
  * These handlers override the default handlers registered in ipcHandlers.ts
+ *
+ * Note: This function should only be called once during app initialization
+ * to avoid race conditions with handler registration
  */
+let handlersRegistered = false
+const handlerRegistrationLock = { locked: false }
+
 function setupIPCHandlers(_mainWindow: BrowserWindow): void {
-  // Remove default handlers first to avoid duplicate registration
-  ipcMain.removeHandler('update:check')
-  ipcMain.removeHandler('update:download')
-  ipcMain.removeHandler('update:install')
-  ipcMain.removeHandler('app:version')
+  // Prevent duplicate registration
+  if (handlersRegistered) {
+    console.warn('Update IPC handlers already registered, skipping duplicate registration')
+    return
+  }
 
-  // Check for updates manually
-  ipcMain.handle('update:check', async () => {
-    try {
-      const result = await autoUpdater.checkForUpdates();
-      return {
-        success: true,
-        updateAvailable: result?.updateInfo?.version !== app.getVersion(),
-        version: result?.updateInfo?.version
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: (error as Error).message
-      };
-    }
-  });
+  // Simple lock to prevent concurrent registration
+  if (handlerRegistrationLock.locked) {
+    console.warn('Handler registration in progress, waiting...')
+    return
+  }
 
-  // Download update
-  ipcMain.handle('update:download', async () => {
-    try {
-      await autoUpdater.downloadUpdate();
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: (error as Error).message
-      };
-    }
-  });
+  handlerRegistrationLock.locked = true
 
-  // Install update (quit and install)
-  ipcMain.handle('update:install', () => {
-    autoUpdater.quitAndInstall(false, true);
-  });
+  try {
+    // Remove default handlers first to avoid duplicate registration
+    ipcMain.removeHandler('update:check')
+    ipcMain.removeHandler('update:download')
+    ipcMain.removeHandler('update:install')
+    ipcMain.removeHandler('app:version')
 
-  // Get current version
-  ipcMain.handle('app:version', () => {
-    return app.getVersion();
-  });
+    // Check for updates manually
+    ipcMain.handle('update:check', async () => {
+      try {
+        const result = await autoUpdater.checkForUpdates();
+        return {
+          success: true,
+          updateAvailable: result?.updateInfo?.version !== app.getVersion(),
+          version: result?.updateInfo?.version
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: (error as Error).message
+        };
+      }
+    });
+
+    // Download update
+    ipcMain.handle('update:download', async () => {
+      try {
+        await autoUpdater.downloadUpdate();
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: (error as Error).message
+        };
+      }
+    });
+
+    // Install update (quit and install)
+    ipcMain.handle('update:install', () => {
+      autoUpdater.quitAndInstall(false, true);
+    });
+
+    // Get current version
+    ipcMain.handle('app:version', () => {
+      return app.getVersion();
+    });
+
+    handlersRegistered = true
+  } finally {
+    handlerRegistrationLock.locked = false
+  }
 }
 
 /**

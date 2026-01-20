@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.4-blue.svg" alt="Version">
+  <img src="https://img.shields.io/github/v/release/cocojojo5213/Dev-Janitor?label=version" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT%20with%20Commons%20Clause-green.svg" alt="License">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/electron-33.3.1-9feaf9.svg" alt="Electron">
@@ -122,9 +122,9 @@ Download the latest release for your platform from the [Releases](https://github
 
 | Platform | Download |
 |----------|----------|
-| Windows | `Dev-Janitor-Setup-1.5.4.exe` |
-| macOS | `Dev-Janitor-1.5.4.dmg` |
-| Linux | `Dev-Janitor-1.5.4.AppImage` |
+| Windows | `Dev-Janitor-Setup-1.6.0.exe` |
+| macOS | `Dev-Janitor-1.6.0.dmg` |
+| Linux | `Dev-Janitor-1.6.0.AppImage` |
 
 ### macOS Troubleshooting
 
@@ -326,6 +326,58 @@ npm run test
 npm run test:watch
 ```
 
+### Code Quality
+
+The project maintains high code quality standards with:
+
+- **Type Safety**: Full TypeScript coverage with strict type checking
+- **Testing**: Comprehensive unit tests using Vitest and property-based testing with fast-check
+- **Security**: Multiple security layers including:
+  - Content Security Policy (CSP)
+  - Command validation and sanitization with enhanced injection protection
+  - Input validation for all user inputs
+  - IPC sender validation
+  - Safe command execution with whitelisting
+  - URL validation for external links (HTTP/HTTPS only)
+  - XSS protection with rehype-sanitize for markdown rendering
+- **Performance Optimizations**:
+  - Async file I/O operations (non-blocking)
+  - Parallel execution for tool detection and package queries
+  - React.memo for component optimization
+  - Debouncing for service monitoring
+  - 5-minute caching for detection results
+  - Timeout protection for network requests (10s)
+- **Memory Management**:
+  - Proper cleanup of intervals and timers
+  - Race condition prevention in async operations
+  - Component unmount protection
+- **Error Handling**:
+  - Process-level error handlers for uncaught exceptions
+  - Proper error propagation in IPC handlers
+  - Graceful degradation on failures
+- **Code Standards**: ESLint configuration for consistent code style
+- **Build Verification**: All builds pass TypeScript compilation and bundling
+
+### Recent Improvements (v1.6.0)
+
+**Backend Enhancements:**
+- Converted synchronous file I/O to async operations for better performance
+- Added concurrency control for parallel AI analysis
+- Implemented timeout protection for network requests
+- Strengthened command validation against injection attacks
+- Added URL validation for external link security
+- Implemented process-level error handlers
+- Fixed memory leaks in service monitoring
+- Fixed IPC handler race conditions
+
+**Frontend Enhancements:**
+- Added XSS protection with rehype-sanitize for markdown rendering
+- Implemented React.memo for performance optimization
+- Fixed memory leaks in AIAssistantDrawer component
+- Fixed race conditions in PackageTable version checking
+- Improved component cleanup on unmount
+- Enhanced error handling consistency
+
 ## Contributing
 
 We welcome contributions! Please follow these steps:
@@ -393,5 +445,5 @@ For commercial licensing inquiries or other questions, please contact us at:
 ---
 
 <p align="center">
-  Made with ❤️ by developers, for developers
+  Made with ❤️ 
 </p>

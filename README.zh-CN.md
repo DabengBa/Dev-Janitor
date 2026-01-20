@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-1.5.4-blue.svg" alt="版本">
+  <img src="https://img.shields.io/github/v/release/cocojojo5213/Dev-Janitor?label=%E7%89%88%E6%9C%AC" alt="版本">
   <img src="https://img.shields.io/badge/许可证-MIT%20with%20Commons%20Clause-green.svg" alt="许可证">
   <img src="https://img.shields.io/badge/平台-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="平台">
   <img src="https://img.shields.io/badge/electron-33.3.1-9feaf9.svg" alt="Electron">
@@ -112,9 +112,9 @@ Dev Janitor（开发清道夫）是一款功能强大的桌面应用程序，旨
 
 | 平台 | 下载 |
 |------|------|
-| Windows | `Dev-Janitor-Setup-1.5.4.exe` |
-| macOS | `Dev-Janitor-1.5.4.dmg` |
-| Linux | `Dev-Janitor-1.5.4.AppImage` |
+| Windows | `Dev-Janitor-Setup-1.6.0.exe` |
+| macOS | `Dev-Janitor-1.6.0.dmg` |
+| Linux | `Dev-Janitor-1.6.0.AppImage` |
 
 ### macOS 故障排除
 
@@ -375,5 +375,5 @@ npm run test:watch
 ---
 
 <p align="center">
-  由开发者为开发者用 ❤️ 制作
+❤️ 制作
 </p>

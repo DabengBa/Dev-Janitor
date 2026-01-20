@@ -25,6 +25,8 @@
   "files": [
     "dist",
     "dist-electron",
+    "package.json",
+    "node_modules/**",
     "!**/*.map",
     "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
     "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
@@ -55,7 +57,7 @@
     "artifactName": "${productName}-Mac-${version}-${arch}.${ext}",
     "category": "public.app-category.developer-tools",
     "darkModeSupport": true,
-    "hardenedRuntime": true,
+    "hardenedRuntime": false,
     "gatekeeperAssess": false,
     "entitlements": "build/entitlements.mac.plist",
     "entitlementsInherit": "build/entitlements.mac.plist",

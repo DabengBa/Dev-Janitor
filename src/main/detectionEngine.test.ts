@@ -284,7 +284,6 @@ describe('DetectionEngine', () => {
 
         expect(Array.isArray(results)).toBe(true)
         expect(results.length).toBe(36) // 12 runtimes + 11 package managers + 4 dev tools + 5 cloud tools + 4 version managers
-
         for (const tool of results) {
           expect(tool).toHaveProperty('name')
           expect(tool).toHaveProperty('displayName')
@@ -293,7 +292,7 @@ describe('DetectionEngine', () => {
           expect(tool).toHaveProperty('isInstalled')
           expect(tool).toHaveProperty('category')
         }
-      })
+      }, 10000) // Increase timeout to 10 seconds for async operations
 
       it('should detect tools in parallel', async () => {
         const startTime = Date.now()

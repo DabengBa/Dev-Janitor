@@ -11,6 +11,7 @@
  */
 
 import * as fs from 'fs'
+import { promises as fsPromises } from 'fs'
 import * as path from 'path'
 import { ToolInfo } from '../shared/types'
 import {
@@ -64,18 +65,32 @@ export function parsePath(): string[] {
 }
 
 /**
+ * Get version output from a command result.
+ * Prefer stdout, fallback to stderr (some tools print version to stderr).
+ */
+function getVersionOutput(result: { stdout?: string; stderr?: string }): string {
+  if (result.stdout && result.stdout.trim()) {
+    return result.stdout
+  }
+  if (result.stderr && result.stderr.trim()) {
+    return result.stderr
+  }
+  return ''
+}
+
+/**
  * Check if a file is executable
  * @param filePath Path to the file
- * @returns true if the file is executable
+ * @returns Promise resolving to true if the file is executable
  */
-export function isExecutable(filePath: string): boolean {
+export async function isExecutable(filePath: string): Promise<boolean> {
   try {
-    const stats = fs.statSync(filePath)
-    
+    const stats = await fsPromises.stat(filePath)
+
     if (!stats.isFile()) {
       return false
     }
-    
+
     if (isWindows()) {
       // On Windows, check for common executable extensions
       const ext = path.extname(filePath).toLowerCase()
@@ -95,22 +110,32 @@ export function isExecutable(filePath: string): boolean {
 /**
  * Scan a directory for executable files
  * @param directory The directory to scan
- * @returns Array of executable file information
+ * @returns Promise resolving to array of executable file information
  */
-export function scanDirectory(directory: string): ExecutableInfo[] {
+export async function scanDirectory(directory: string): Promise<ExecutableInfo[]> {
   const executables: ExecutableInfo[] = []
-  
+
   try {
-    if (!fs.existsSync(directory)) {
+    // Check if directory exists
+    try {
+      await fsPromises.access(directory)
+    } catch {
       return executables
     }
-    
-    const files = fs.readdirSync(directory)
-    
-    for (const file of files) {
-      const filePath = path.join(directory, file)
-      
-      if (isExecutable(filePath)) {
+
+    const files = await fsPromises.readdir(directory)
+
+    // Check executables in parallel for better performance
+    const checks = await Promise.all(
+      files.map(async (file) => {
+        const filePath = path.join(directory, file)
+        const isExec = await isExecutable(filePath)
+        return { file, filePath, isExec }
+      })
+    )
+
+    for (const { file, filePath, isExec } of checks) {
+      if (isExec) {
         // Get the base name without extension on Windows
         let name = file
         if (isWindows()) {
@@ -119,7 +144,7 @@ export function scanDirectory(directory: string): ExecutableInfo[] {
             name = path.basename(file, ext)
           }
         }
-        
+
         executables.push({
           name: name.toLowerCase(),
           path: normalizePath(filePath),
@@ -130,24 +155,27 @@ export function scanDirectory(directory: string): ExecutableInfo[] {
   } catch {
     // Directory not accessible, skip it
   }
-  
+
   return executables
 }
 
 /**
  * Scan all PATH directories for executables
- * 
+ *
  * Property 12: PATH Scanning Completeness
- * @returns Array of all executable files found in PATH
+ * @returns Promise resolving to array of all executable files found in PATH
  */
-export function scanAllPathDirectories(): ExecutableInfo[] {
+export async function scanAllPathDirectories(): Promise<ExecutableInfo[]> {
   const pathDirs = parsePath()
   const allExecutables: ExecutableInfo[] = []
   const seen = new Set<string>()
-  
-  for (const dir of pathDirs) {
-    const executables = scanDirectory(dir)
-    
+
+  // Scan directories in parallel for better performance
+  const results = await Promise.all(
+    pathDirs.map(dir => scanDirectory(dir))
+  )
+
+  for (const executables of results) {
     for (const exec of executables) {
       // Use name + path as unique key to track duplicates
       const key = `${exec.name}:${exec.path}`
@@ -157,7 +185,7 @@ export function scanAllPathDirectories(): ExecutableInfo[] {
       }
     }
   }
-  
+
   return allExecutables
 }
 
@@ -284,7 +312,7 @@ export async function getExtendedToolInfo(toolName: string): Promise<ExtendedToo
   
   // Get version
   const versionResult = await executeSafe(`${toolName} --version`)
-  const { version } = parseVersion(versionResult.stdout)
+  const { version } = parseVersion(getVersionOutput(versionResult))
   
   // Determine primary path and install method
   const primaryPath = allPaths.length > 0 ? allPaths[0] : null
@@ -312,44 +340,62 @@ export async function getExtendedToolInfo(toolName: string): Promise<ExtendedToo
 
 /**
  * Find all installations of a tool across the system
- * 
+ *
  * Property 13: Multiple Installation Locations
  * @param toolName The name of the tool to find
  * @returns Promise resolving to array of paths where the tool is installed
  */
 export async function findAllInstallations(toolName: string): Promise<string[]> {
   const paths: string[] = []
-  
+
   // First, use which/where to find in PATH
   const pathResults = await getAllToolPaths(toolName)
   paths.push(...pathResults)
-  
+
   // Also scan PATH directories directly for the tool
   const pathDirs = parsePath()
-  
-  for (const dir of pathDirs) {
-    try {
-      if (!fs.existsSync(dir)) continue
-      
-      const files = fs.readdirSync(dir)
-      
-      for (const file of files) {
-        const baseName = isWindows() 
-          ? path.basename(file, path.extname(file)).toLowerCase()
-          : file.toLowerCase()
-        
-        if (baseName === toolName.toLowerCase()) {
-          const fullPath = normalizePath(path.join(dir, file))
-          if (!paths.includes(fullPath) && isExecutable(path.join(dir, file))) {
-            paths.push(fullPath)
+
+  // Scan directories in parallel
+  const results = await Promise.all(
+    pathDirs.map(async (dir) => {
+      try {
+        // Check if directory exists
+        try {
+          await fsPromises.access(dir)
+        } catch {
+          return []
+        }
+
+        const files = await fsPromises.readdir(dir)
+        const foundPaths: string[] = []
+
+        for (const file of files) {
+          const baseName = isWindows()
+            ? path.basename(file, path.extname(file)).toLowerCase()
+            : file.toLowerCase()
+
+          if (baseName === toolName.toLowerCase()) {
+            const fullPath = normalizePath(path.join(dir, file))
+            const isExec = await isExecutable(path.join(dir, file))
+            if (!paths.includes(fullPath) && isExec) {
+              foundPaths.push(fullPath)
+            }
           }
         }
+
+        return foundPaths
+      } catch {
+        // Skip inaccessible directories
+        return []
       }
-    } catch {
-      // Skip inaccessible directories
-    }
+    })
+  )
+
+  // Flatten results
+  for (const dirPaths of results) {
+    paths.push(...dirPaths)
   }
-  
+
   return [...new Set(paths)] // Remove duplicates
 }
 
@@ -385,14 +431,14 @@ export class PathScanner {
   /**
    * Scan a directory for executables
    */
-  scanDirectory(directory: string): ExecutableInfo[] {
+  async scanDirectory(directory: string): Promise<ExecutableInfo[]> {
     return scanDirectory(directory)
   }
-  
+
   /**
    * Scan all PATH directories
    */
-  scanAllPathDirectories(): ExecutableInfo[] {
+  async scanAllPathDirectories(): Promise<ExecutableInfo[]> {
     return scanAllPathDirectories()
   }
   
