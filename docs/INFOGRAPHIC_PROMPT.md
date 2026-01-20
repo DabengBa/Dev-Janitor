@@ -56,8 +56,8 @@ Create a cartoon-style hand-drawn infographic with the rules above, using nano b
 
 ---
 
-Dev Janitor v1.6.2 - 开发清道夫
-A cross-platform desktop app for managing development tools
+Dev Janitor v1.6.2 - Your Vibe Coding Toolkit
+A cross-platform desktop app for managing dev tools & AI coding assistants
 
 🔍 工具检测 Tool Detection
 - 自动扫描 36+ 开发工具

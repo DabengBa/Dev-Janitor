@@ -5,7 +5,9 @@
 </p>
 
 <p align="center">
-  <strong>A cross-platform desktop application for cleaning up and managing development tools and dependencies</strong>
+  <strong>Your Vibe Coding Toolkit</strong>
+  <br>
+  <em>A cross-platform desktop application for managing development tools, AI coding assistants, and dependencies</em>
 </p>
 
 <p align="center">

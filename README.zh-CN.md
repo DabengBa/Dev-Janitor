@@ -5,7 +5,9 @@
 </p>
 
 <p align="center">
-  <strong>跨平台桌面应用程序，帮你清理和管理开发工具与依赖</strong>
+  <strong>Vibe Coding 工具箱</strong>
+  <br>
+  <em>跨平台桌面应用，管理开发工具、AI 编程助手和依赖包</em>
 </p>
 
 <p align="center">
