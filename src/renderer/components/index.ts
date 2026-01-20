@@ -15,3 +15,6 @@ export * from './Common'
 
 // Settings components
 export * from './Settings'
+
+// AI CLI components
+export * from './AICli'

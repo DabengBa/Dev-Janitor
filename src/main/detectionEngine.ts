@@ -9,7 +9,7 @@
  * Validates: Requirements 1.2-1.9, 2.1-2.5
  */
 
-import { ToolInfo, DetectionSummary, CommandResult } from '../shared/types'
+import { ToolInfo, DetectionSummary, CommandResult, AICLITool } from '../shared/types'
 import {
   CommandExecutor,
   commandExecutor,
@@ -913,6 +913,255 @@ export class DetectionEngine {
     }
 
     return { tools, summary }
+  }
+
+  /**
+   * Detect all AI CLI tools
+   * Supports: Codex (OpenAI), Claude Code (Anthropic), Gemini CLI (Google), OpenCode (SST)
+   */
+  async detectAICLITools(): Promise<AICLITool[]> {
+    const aiTools: AICLITool[] = []
+
+    // Define AI CLI tools to detect
+    const toolDefinitions: Array<{
+      name: string
+      displayName: string
+      command: string
+      packageName: string
+      description: string
+      homepage: string
+      provider: AICLITool['provider']
+      configPath: string
+    }> = [
+      {
+        name: 'codex',
+        displayName: 'OpenAI Codex',
+        command: 'codex',
+        packageName: '@openai/codex',
+        description: 'AI coding agent from OpenAI that runs locally',
+        homepage: 'https://github.com/openai/codex',
+        provider: 'openai',
+        configPath: isWindows ? '%USERPROFILE%\\.codex' : '~/.codex',
+      },
+      {
+        name: 'claude',
+        displayName: 'Claude Code',
+        command: 'claude',
+        packageName: '@anthropic-ai/claude-code',
+        description: 'Agentic coding tool from Anthropic',
+        homepage: 'https://github.com/anthropics/claude-code',
+        provider: 'anthropic',
+        configPath: isWindows ? '%USERPROFILE%\\.claude' : '~/.claude',
+      },
+      {
+        name: 'gemini',
+        displayName: 'Gemini CLI',
+        command: 'gemini',
+        packageName: '@google/gemini-cli',
+        description: 'AI agent from Google that brings Gemini to your terminal',
+        homepage: 'https://github.com/google-gemini/gemini-cli',
+        provider: 'google',
+        configPath: isWindows ? '%USERPROFILE%\\.gemini' : '~/.gemini',
+      },
+      {
+        name: 'opencode',
+        displayName: 'OpenCode',
+        command: 'opencode',
+        packageName: 'opencode',
+        description: 'Open source AI coding agent by SST',
+        homepage: 'https://opencode.ai',
+        provider: 'sst',
+        configPath: isWindows ? '%USERPROFILE%\\.opencode' : '~/.opencode',
+      },
+    ]
+
+    // Detect each tool
+    for (const def of toolDefinitions) {
+      const tool = await this.detectSingleAICLITool(def)
+      aiTools.push(tool)
+    }
+
+    return aiTools
+  }
+
+  /**
+   * Detect a single AI CLI tool
+   */
+  private async detectSingleAICLITool(def: {
+    name: string
+    displayName: string
+    command: string
+    packageName: string
+    description: string
+    homepage: string
+    provider: AICLITool['provider']
+    configPath: string
+  }): Promise<AICLITool> {
+    try {
+      // Try to get version
+      const versionResult = await this.executor.executeSafe(`${def.command} --version`)
+      
+      if (!versionResult.success) {
+        return {
+          name: def.name,
+          displayName: def.displayName,
+          command: def.command,
+          version: null,
+          path: null,
+          isInstalled: false,
+          installMethod: 'unknown',
+          packageName: def.packageName,
+          configPath: def.configPath,
+          description: def.description,
+          homepage: def.homepage,
+          provider: def.provider,
+        }
+      }
+
+      // Parse version from output
+      const output = versionResult.stdout || versionResult.stderr
+      const { version } = parseVersion(output)
+      
+      // Get installation path
+      const path = await this.executor.getToolPath(def.command)
+      
+      // Determine install method
+      let installMethod: AICLITool['installMethod'] = 'unknown'
+      if (path) {
+        if (path.includes('npm') || path.includes('node_modules')) {
+          installMethod = 'npm'
+        } else if (path.includes('homebrew') || path.includes('Cellar')) {
+          installMethod = 'brew'
+        } else if (path.includes('.opencode') || path.includes('bin')) {
+          installMethod = 'script'
+        }
+      }
+
+      return {
+        name: def.name,
+        displayName: def.displayName,
+        command: def.command,
+        version,
+        path,
+        isInstalled: true,
+        installMethod,
+        packageName: def.packageName,
+        configPath: def.configPath,
+        description: def.description,
+        homepage: def.homepage,
+        provider: def.provider,
+      }
+    } catch {
+      return {
+        name: def.name,
+        displayName: def.displayName,
+        command: def.command,
+        version: null,
+        path: null,
+        isInstalled: false,
+        installMethod: 'unknown',
+        packageName: def.packageName,
+        configPath: def.configPath,
+        description: def.description,
+        homepage: def.homepage,
+        provider: def.provider,
+      }
+    }
+  }
+
+  /**
+   * Install an AI CLI tool
+   */
+  async installAICLITool(toolName: string): Promise<{ success: boolean; error?: string }> {
+    const packageMap: Record<string, string> = {
+      codex: '@openai/codex',
+      claude: '@anthropic-ai/claude-code',
+      gemini: '@google/gemini-cli',
+      opencode: 'opencode', // OpenCode uses install script, but npm also works
+    }
+
+    const packageName = packageMap[toolName]
+    if (!packageName) {
+      return { success: false, error: `Unknown AI CLI tool: ${toolName}` }
+    }
+
+    try {
+      const result = await this.executor.executeSafe(`npm install -g ${packageName}`)
+      if (result.success) {
+        // Invalidate cache
+        this.cache.invalidate(toolName)
+        return { success: true }
+      }
+      return { success: false, error: result.stderr || 'Installation failed' }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+
+  /**
+   * Update an AI CLI tool
+   */
+  async updateAICLITool(toolName: string): Promise<{ success: boolean; newVersion?: string; error?: string }> {
+    const packageMap: Record<string, string> = {
+      codex: '@openai/codex',
+      claude: '@anthropic-ai/claude-code',
+      gemini: '@google/gemini-cli',
+      opencode: 'opencode',
+    }
+
+    const packageName = packageMap[toolName]
+    if (!packageName) {
+      return { success: false, error: `Unknown AI CLI tool: ${toolName}` }
+    }
+
+    try {
+      const result = await this.executor.executeSafe(`npm update -g ${packageName}`)
+      if (result.success) {
+        // Get new version
+        const tool = await this.detectSingleAICLITool({
+          name: toolName,
+          displayName: toolName,
+          command: toolName,
+          packageName,
+          description: '',
+          homepage: '',
+          provider: 'other',
+          configPath: '',
+        })
+        return { success: true, newVersion: tool.version || undefined }
+      }
+      return { success: false, error: result.stderr || 'Update failed' }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  }
+
+  /**
+   * Uninstall an AI CLI tool
+   */
+  async uninstallAICLITool(toolName: string): Promise<{ success: boolean; error?: string }> {
+    const packageMap: Record<string, string> = {
+      codex: '@openai/codex',
+      claude: '@anthropic-ai/claude-code',
+      gemini: '@google/gemini-cli',
+      opencode: 'opencode',
+    }
+
+    const packageName = packageMap[toolName]
+    if (!packageName) {
+      return { success: false, error: `Unknown AI CLI tool: ${toolName}` }
+    }
+
+    try {
+      const result = await this.executor.executeSafe(`npm uninstall -g ${packageName}`)
+      if (result.success) {
+        this.cache.invalidate(toolName)
+        return { success: true }
+      }
+      return { success: false, error: result.stderr || 'Uninstallation failed' }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
   }
 }
 

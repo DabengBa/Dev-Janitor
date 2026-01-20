@@ -108,7 +108,23 @@ export type SupportedLanguage = 'zh-CN' | 'en-US'
 export type ThemeMode = 'system' | 'light' | 'dark'
 
 // View Types
-export type ViewType = 'tools' | 'packages' | 'services' | 'environment' | 'settings'
+export type ViewType = 'tools' | 'packages' | 'services' | 'environment' | 'settings' | 'ai-cli'
+
+// AI CLI Tool Information
+export interface AICLITool {
+  name: string                    // Tool identifier (e.g., 'codex', 'claude', 'gemini', 'opencode')
+  displayName: string             // Display name (e.g., 'OpenAI Codex', 'Claude Code')
+  command: string                 // CLI command (e.g., 'codex', 'claude', 'gemini', 'opencode')
+  version: string | null          // Installed version
+  path: string | null             // Installation path
+  isInstalled: boolean            // Whether the tool is installed
+  installMethod: 'npm' | 'brew' | 'script' | 'binary' | 'unknown'
+  packageName?: string            // npm package name (e.g., '@openai/codex')
+  configPath?: string             // Configuration file path
+  description: string             // Tool description
+  homepage: string                // Official homepage URL
+  provider: 'openai' | 'anthropic' | 'google' | 'sst' | 'other'
+}
 
 // AI Assistant Types
 export interface AnalysisResult {

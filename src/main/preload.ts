@@ -11,7 +11,7 @@
  */
 
 import { ipcRenderer, contextBridge } from 'electron'
-import type { ToolInfo, PackageInfo, RunningService, EnvironmentVariable, AnalysisResult, AIConfig } from '../shared/types'
+import type { ToolInfo, PackageInfo, RunningService, EnvironmentVariable, AnalysisResult, AIConfig, AICLITool } from '../shared/types'
 
 /**
  * Preload error logging utility
@@ -147,6 +147,14 @@ interface ElectronAPI {
     onError: (callback: (error: string) => void) => () => void
   }
 
+  // AI CLI Tools API
+  aiCli: {
+    detectAll: () => Promise<AICLITool[]>
+    install: (toolName: string) => Promise<{ success: boolean; error?: string }>
+    update: (toolName: string) => Promise<{ success: boolean; newVersion?: string; error?: string }>
+    uninstall: (toolName: string) => Promise<{ success: boolean; error?: string }>
+  }
+
   // App/Update API
   app: {
     getVersion: () => Promise<string>
@@ -239,6 +247,13 @@ function createDegradedAPI(): ElectronAPI {
     events: {
       onDetectionProgress: createDegradedCallback,
       onError: createDegradedCallback,
+    },
+
+    aiCli: {
+      detectAll: createDegradedPromise,
+      install: createDegradedPromise,
+      update: createDegradedPromise,
+      uninstall: createDegradedPromise,
     },
 
     app: {
@@ -378,6 +393,14 @@ function createElectronAPI(): ElectronAPI {
           ipcRenderer.removeListener('error', handler)
         }
       },
+    },
+
+    // AI CLI Tools API
+    aiCli: {
+      detectAll: () => ipcRenderer.invoke('ai-cli:detect-all'),
+      install: (toolName: string) => ipcRenderer.invoke('ai-cli:install', toolName),
+      update: (toolName: string) => ipcRenderer.invoke('ai-cli:update', toolName),
+      uninstall: (toolName: string) => ipcRenderer.invoke('ai-cli:uninstall', toolName),
     },
 
     // App/Update API

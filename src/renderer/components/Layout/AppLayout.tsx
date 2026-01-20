@@ -22,6 +22,7 @@ import ServicesView from '../Services/ServicesView'
 import EnvironmentView from '../Environment/EnvironmentView'
 import { SettingsView } from '../Settings'
 import { AIAssistantDrawer } from '../AI'
+import { AICLIView } from '../AICli'
 
 const { Content } = Layout
 
@@ -72,6 +73,8 @@ const AppLayout: React.FC = () => {
         return <EnvironmentView />
       case 'settings':
         return <SettingsView />
+      case 'ai-cli':
+        return <AICLIView />
       default:
         return <ToolsView />
     }

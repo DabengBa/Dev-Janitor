@@ -40,7 +40,8 @@
     "packages": "Packages",
     "services": "Services",
     "environment": "Environment",
-    "settings": "Settings"
+    "settings": "Settings",
+    "aiCli": "AI CLI"
   },
   "header": {
     "title": "Dev Janitor",
@@ -351,5 +352,25 @@
     "helpNote": "Click 'Analyze Environment' button to start intelligent analysis",
     "refresh": "Regenerate Suggestions",
     "refreshed": "AI recommendations refreshed"
+  },
+  "aiCli": {
+    "title": "AI CLI Tools",
+    "subtitle": "Manage AI coding assistants for your terminal",
+    "detecting": "Detecting AI CLI tools...",
+    "noTools": "No AI CLI tools configured",
+    "infoTitle": "About AI CLI Tools",
+    "infoDescription": "These are AI-powered coding assistants that run in your terminal. They can help you write code, debug issues, and understand codebases.",
+    "install": "Install",
+    "update": "Update",
+    "uninstall": "Uninstall",
+    "installSuccess": "{{name}} installed successfully",
+    "installFailed": "Failed to install AI CLI tool",
+    "updateSuccess": "{{name}} updated to {{version}}",
+    "updateFailed": "Failed to update AI CLI tool",
+    "uninstallSuccess": "{{name}} uninstalled successfully",
+    "uninstallFailed": "Failed to uninstall AI CLI tool",
+    "uninstallConfirm": "Are you sure you want to uninstall {{name}}?",
+    "openHomepage": "Open Homepage",
+    "openConfig": "Open Config Folder"
   }
 }

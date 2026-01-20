@@ -20,7 +20,7 @@ import { environmentScanner } from './environmentScanner'
 import { aiAssistant } from './aiAssistant'
 import { commandExecutor } from './commandExecutor'
 import { commandValidator, inputValidator, validateIPCSender } from './security'
-import type { ToolInfo, PackageInfo, RunningService, EnvironmentVariable, AnalysisResult, AIConfig } from '../shared/types'
+import type { ToolInfo, PackageInfo, RunningService, EnvironmentVariable, AnalysisResult, AIConfig, AICLITool } from '../shared/types'
 
 // Store for language preference
 let currentLanguage = 'en-US'
@@ -455,6 +455,56 @@ function registerAIHandlers(): void {
 }
 
 /**
+ * Register all IPC handlers for AI CLI tools management
+ */
+function registerAICLIHandlers(): void {
+  // Detect all AI CLI tools
+  ipcMain.handle('ai-cli:detect-all', async (): Promise<AICLITool[]> => {
+    try {
+      const tools = await detectionEngine.detectAICLITools()
+      return tools
+    } catch (error) {
+      console.error('Error detecting AI CLI tools:', error)
+      sendToAllWindows('error', `Failed to detect AI CLI tools: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return []
+    }
+  })
+
+  // Install an AI CLI tool
+  ipcMain.handle('ai-cli:install', async (_event, toolName: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await detectionEngine.installAICLITool(toolName)
+      return result
+    } catch (error) {
+      console.error(`Error installing AI CLI tool ${toolName}:`, error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  // Update an AI CLI tool
+  ipcMain.handle('ai-cli:update', async (_event, toolName: string): Promise<{ success: boolean; newVersion?: string; error?: string }> => {
+    try {
+      const result = await detectionEngine.updateAICLITool(toolName)
+      return result
+    } catch (error) {
+      console.error(`Error updating AI CLI tool ${toolName}:`, error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  // Uninstall an AI CLI tool
+  ipcMain.handle('ai-cli:uninstall', async (_event, toolName: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await detectionEngine.uninstallAICLITool(toolName)
+      return result
+    } catch (error) {
+      console.error(`Error uninstalling AI CLI tool ${toolName}:`, error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+}
+
+/**
  * Register all IPC handlers for app info and updates
  * These handlers are always registered, regardless of auto-updater status
  */
@@ -631,6 +681,7 @@ export function registerAllIPCHandlers(): void {
   registerEnvironmentHandlers()
   registerSettingsHandlers()
   registerAIHandlers()
+  registerAICLIHandlers()
   registerAppHandlers()
   registerShellHandlers()
   
@@ -684,6 +735,10 @@ export function cleanupIPCHandlers(): void {
   ipcMain.removeHandler('shell:open-path')
   ipcMain.removeHandler('shell:open-external')
   ipcMain.removeHandler('shell:execute-command')
+  ipcMain.removeHandler('ai-cli:detect-all')
+  ipcMain.removeHandler('ai-cli:install')
+  ipcMain.removeHandler('ai-cli:update')
+  ipcMain.removeHandler('ai-cli:uninstall')
   
   ipcHandlersRegistered = false
   console.log('All IPC handlers cleaned up')
