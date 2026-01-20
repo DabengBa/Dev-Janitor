@@ -34,3 +34,10 @@ release/
 
 # Kiro IDE
 .kiro/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Test output
+*-test-result.json
+test-result.json
