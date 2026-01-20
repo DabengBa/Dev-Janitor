@@ -27,6 +27,24 @@
 
 ---
 
+## 🧹 v1.8.0 - 缓存清理功能
+
+### 包管理器缓存清理
+- [ ] 扫描各包管理器缓存目录大小
+  - npm: `~/.npm/_cacache`
+  - yarn: `~/.yarn/cache`
+  - pnpm: `~/.pnpm-store`
+  - pip: `~/.cache/pip` (Linux/Mac) / `%LOCALAPPDATA%\pip\cache` (Windows)
+  - Composer: `~/.composer/cache`
+  - Cargo: `~/.cargo/registry/cache`
+  - Homebrew: `~/Library/Caches/Homebrew`
+- [ ] 显示各缓存占用空间
+- [ ] 一键清理单个/全部缓存
+- [ ] 清理前确认提示
+- [ ] 清理结果统计（释放了多少空间）
+
+---
+
 ## 📋 Backlog (未排期)
 
 ### 功能增强
