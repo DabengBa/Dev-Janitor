@@ -15,7 +15,7 @@
  * ============================================================================
  */
 
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { registerAllIPCHandlers, cleanupIPCHandlers, areIPCHandlersRegistered } from './ipcHandlers'
@@ -80,7 +80,8 @@ function createWindow() {
   console.log('[Main] Creating window with preload:', preloadPath)
   console.log('[Main] isDev:', isDev)
   console.log('[Main] __dirname:', __dirname)
-  
+
+  Menu.setApplicationMenu(null);
   win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -97,6 +98,7 @@ function createWindow() {
     title: 'Dev Tools Manager',
     // Mac-specific: show window when ready to prevent white flash
     show: false,
+    autoHideMenuBar: true,
   })
 
   // Show window when ready to render (prevents white screen flash on Mac)
