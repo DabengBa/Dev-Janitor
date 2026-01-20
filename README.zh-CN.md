@@ -375,5 +375,5 @@ npm run test:watch
 ---
 
 <p align="center">
-  由开发者为开发者用 ❤️ 制作
+❤️ 制作
 </p>
