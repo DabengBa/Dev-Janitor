@@ -5,6 +5,21 @@ All notable changes to Dev Janitor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-01-20
+
+### Added
+- **Maven Tool Detection**: Added support for detecting Maven (`mvn -version`)
+
+### Fixed
+- **Java Version Detection**: Fixed Java version parsing (Java outputs to stderr, not stdout)
+
+### Changed
+- **Hide Menu Bar**: Removed default Electron menu bar for cleaner UI
+- **Dynamic Version**: About page now displays version from package.json dynamically
+- **i18n Improvements**: Added internationalization for AI config section (model labels, provider labels, model descriptions)
+
+---
+
 ## [1.5.5] - 2026-01-18
 
 ### Fixed
@@ -321,6 +336,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.6.1]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.6.1
 [1.5.5]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.5.5
 [1.5.4]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.5.4
 [1.5.3]: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v1.5.3
