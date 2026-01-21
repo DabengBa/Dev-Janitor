@@ -9,23 +9,32 @@
  * Validates: Requirements 5.1, 5.4, 5.6, 7.1, 7.2, 7.3
  */
 
-import React, { useState, useEffect } from 'react'
-import { Layout, message, FloatButton, theme } from 'antd'
+import React, { useState, useEffect, lazy, Suspense } from 'react'
+import { Layout, message, FloatButton, theme, Spin } from 'antd'
 import { RobotOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store'
 import Header from './Header'
 import Sidebar from './Sidebar'
-import ToolsView from '../Tools/ToolsView'
-import PackagesView from '../Packages/PackagesView'
-import ServicesView from '../Services/ServicesView'
-import EnvironmentView from '../Environment/EnvironmentView'
-import { SettingsView } from '../Settings'
-import { AIAssistantDrawer } from '../AI'
-import { AICLIView } from '../AICli'
-import { CacheCleanerView } from '../CacheCleaner'
+
+// Lazy load views for better startup performance
+const ToolsView = lazy(() => import('../Tools/ToolsView'))
+const PackagesView = lazy(() => import('../Packages/PackagesView'))
+const ServicesView = lazy(() => import('../Services/ServicesView'))
+const EnvironmentView = lazy(() => import('../Environment/EnvironmentView'))
+const SettingsView = lazy(() => import('../Settings/SettingsView'))
+const AIAssistantDrawer = lazy(() => import('../AI/AIAssistantDrawer'))
+const AICLIView = lazy(() => import('../AICli/AICLIView'))
+const CacheCleanerView = lazy(() => import('../CacheCleaner/CacheCleanerView'))
 
 const { Content } = Layout
+
+// Loading fallback component
+const ViewLoading: React.FC = () => (
+  <div className="flex items-center justify-center h-full min-h-[200px]">
+    <Spin size="large" />
+  </div>
+)
 
 const AppLayout: React.FC = () => {
   const { t } = useTranslation()
@@ -97,7 +106,9 @@ const AppLayout: React.FC = () => {
         
         {/* Content - Validates: Requirement 5.4 (responsive) */}
         <Content className="overflow-auto" style={{ background: token.colorBgLayout }}>
-          {renderContent()}
+          <Suspense fallback={<ViewLoading />}>
+            {renderContent()}
+          </Suspense>
         </Content>
       </Layout>
 
@@ -111,10 +122,12 @@ const AppLayout: React.FC = () => {
       />
 
       {/* AI Assistant Drawer */}
-      <AIAssistantDrawer
-        open={aiDrawerOpen}
-        onClose={() => setAiDrawerOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <AIAssistantDrawer
+          open={aiDrawerOpen}
+          onClose={() => setAiDrawerOpen(false)}
+        />
+      </Suspense>
     </Layout>
   )
 }

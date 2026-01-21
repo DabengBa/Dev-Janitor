@@ -604,3 +604,5 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ open, onCl
     </Drawer>
   )
 }
+
+export default AIAssistantDrawer
