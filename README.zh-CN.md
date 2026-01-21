@@ -1,6 +1,10 @@
 # Dev Janitor 开发清道夫
 
 <p align="center">
+  <img src="docs/hero-1.png" alt="Dev Janitor 介绍" width="100%">
+</p>
+
+<p align="center">
   <img src="build/icon.svg" alt="Dev Janitor Logo" width="128" height="128">
 </p>
 

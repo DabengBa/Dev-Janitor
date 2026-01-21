@@ -1,6 +1,10 @@
 # Dev Janitor
 
 <p align="center">
+  <img src="docs/hero-2.png" alt="Dev Janitor Hero" width="100%">
+</p>
+
+<p align="center">
   <img src="build/icon.svg" alt="Dev Janitor Logo" width="128" height="128">
 </p>
 
