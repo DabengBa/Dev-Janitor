@@ -119,5 +119,5 @@ pnpm tauri dev
 ---
 
 <div align="center">
-  <sub>Built by <a href="https://github.com/cocojojo5213">cocojojo5213</a> with the help of <a href="https://cursor.sh">Cursor</a> and <a href="https://deepmind.google/technologies/gemini/">Gemini</a>.</sub>
+  <sub>Built by <a href="https://github.com/cocojojo5213">cocojojo5213</a>
 </div>
