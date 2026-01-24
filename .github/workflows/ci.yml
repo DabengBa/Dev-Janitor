@@ -27,15 +27,12 @@ jobs:
       
       - name: Install frontend dependencies
         run: pnpm install
-
       
       - name: Lint frontend
         run: pnpm lint
-
       
       - name: Type check
         run: pnpm tsc --noEmit
-
 
   build:
     strategy:
@@ -74,11 +71,9 @@ jobs:
       
       - name: Install frontend dependencies
         run: pnpm install
-
       
       - name: Build frontend
         run: pnpm build
-
       
       - name: Check Rust code
         run: cargo check
