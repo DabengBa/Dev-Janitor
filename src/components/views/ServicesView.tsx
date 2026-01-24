@@ -129,7 +129,7 @@ export function ServicesView() {
         SYN_RECV: t('services.state.syn_recv'),
         FIN_WAIT1: t('services.state.fin_wait1'),
         FIN_WAIT2: t('services.state.fin_wait2'),
-        N/A: t('services.state.na'),
+        'N/A': t('services.state.na'),
     };
 
     return (
