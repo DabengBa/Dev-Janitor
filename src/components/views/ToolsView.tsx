@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scanTools, uninstallTool, ToolInfo } from '../../ipc/commands';
 
@@ -27,7 +27,7 @@ export function ToolsView() {
     }, []);
 
     const handleUninstall = async (toolId: string, toolName: string, path: string) => {
-        if (!confirm(t('tools.confirm_uninstall', { name: toolName }) || `Are you sure you want to uninstall ${toolName}?`)) {
+        if (!confirm(t('tools.confirm_uninstall', { name: toolName }))) {
             return;
         }
 
@@ -36,8 +36,8 @@ export function ToolsView() {
         setSuccess(null);
 
         try {
-            const result = await uninstallTool(toolId, path);
-            setSuccess(result);
+            await uninstallTool(toolId, path);
+            setSuccess(t('tools.success_uninstall', { name: toolName }));
             // Refresh tools list after uninstall
             await handleScan();
         } catch (e) {
@@ -69,13 +69,13 @@ export function ToolsView() {
     }, {} as Record<string, ToolInfo[]>);
 
     const categoryNames: Record<string, string> = {
-        runtime: 'Runtimes',
-        package_manager: 'Package Managers',
-        version_manager: 'Version Managers',
-        build_tool: 'Build Tools',
-        version_control: 'Version Control',
-        container: 'Containers',
-        ai_cli: 'AI CLI Tools',
+        runtime: t('tools.categories.runtime'),
+        package_manager: t('tools.categories.package_manager'),
+        version_manager: t('tools.categories.version_manager'),
+        build_tool: t('tools.categories.build_tool'),
+        version_control: t('tools.categories.version_control'),
+        container: t('tools.categories.container'),
+        ai_cli: t('tools.categories.ai_cli'),
     };
 
     return (
@@ -143,18 +143,18 @@ export function ToolsView() {
                                     </thead>
                                     <tbody>
                                         {categoryTools.map((tool) => (
-                                            <>
+                                            <Fragment key={tool.id}>
                                                 <tr key={tool.id} onClick={() => tool.versions.length > 1 && toggleExpand(tool.id)} style={{ cursor: tool.versions.length > 1 ? 'pointer' : 'default' }}>
                                                     <td>
                                                         <strong>{tool.name}</strong>
                                                         {tool.versions.length > 1 && (
-                                                            <span className="expand-icon">{expandedTool === tool.id ? '▼' : '▶'}</span>
+                                                            <span className="expand-icon">{expandedTool === tool.id ? '-' : '+'}</span>
                                                         )}
                                                     </td>
                                                     <td>
                                                         {tool.versions.length > 1 ? (
                                                             <span className="badge badge-warning">
-                                                                {tool.versions.length} versions
+                                                                {t('tools.versions', { count: tool.versions.length })}
                                                             </span>
                                                         ) : (
                                                             tool.versions[0]?.version || '-'
@@ -187,7 +187,11 @@ export function ToolsView() {
                                                         <td></td>
                                                         <td>
                                                             {ver.version}
-                                                            {ver.is_active && <span className="badge badge-success" style={{ marginLeft: 8 }}>Active</span>}
+                                                            {ver.is_active && (
+                                                                <span className="badge badge-success" style={{ marginLeft: 8 }}>
+                                                                    {t('tools.active')}
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="path-cell" onClick={() => copyPath(ver.path)}>
                                                             {ver.path}
@@ -204,7 +208,7 @@ export function ToolsView() {
                                                         </td>
                                                     </tr>
                                                 ))}
-                                            </>
+                                            </Fragment>
                                         ))}
                                     </tbody>
                                 </table>

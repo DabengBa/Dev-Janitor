@@ -1,6 +1,7 @@
 //! Homebrew package manager support (macOS only)
 
 use super::{PackageInfo, PackageManager};
+#[cfg(target_os = "macos")]
 use std::process::Command;
 
 pub struct HomebrewManager {

@@ -4,7 +4,7 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// Represents an AI junk file detected
@@ -20,6 +20,7 @@ pub struct AiJunkFile {
 }
 
 /// Scan mode for AI junk detection
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ScanMode {
     FullDisk,
@@ -134,7 +135,7 @@ fn get_size(path: &PathBuf) -> u64 {
 }
 
 /// Check if a file/directory should be whitelisted
-fn is_whitelisted(path: &PathBuf) -> bool {
+fn is_whitelisted(path: &Path) -> bool {
     let name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_lowercase())
@@ -251,8 +252,8 @@ pub fn scan_ai_junk(root_path: &str, max_depth: usize) -> Vec<AiJunkFile> {
     let entries: Vec<_> = WalkDir::new(&root)
         .max_depth(max_depth)
         .into_iter()
+        .filter_entry(|e| !is_whitelisted(e.path()))
         .filter_map(|e| e.ok())
-        .filter(|e| !is_whitelisted(&e.path().to_path_buf()))
         .collect();
 
     let mut id_counter = 0;

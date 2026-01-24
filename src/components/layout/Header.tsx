@@ -61,7 +61,7 @@ export function Header() {
                     title={t('settings.language')}
                 >
                     <span style={{ fontSize: '14px', fontWeight: 500 }}>
-                        {i18n.language === 'en' ? '中' : 'EN'}
+                        {i18n.language === 'en' ? '\u4e2d\u6587' : 'EN'}
                     </span>
                 </button>
                 <button

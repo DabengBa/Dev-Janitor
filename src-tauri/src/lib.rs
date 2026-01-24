@@ -9,6 +9,7 @@ mod detection;
 mod error;
 mod package_manager;
 mod services;
+mod utils;
 
 use commands::{
     analyze_path_cmd, clean_cache_cmd, clean_multiple_caches, delete_ai_junk_cmd,

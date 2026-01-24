@@ -2,7 +2,8 @@
 
 use super::{PackageInfo, PackageManager};
 use serde::Deserialize;
-use std::process::Command;
+
+use crate::utils::command::command_no_window;
 
 pub struct NpmManager {
     version: String,
@@ -107,14 +108,7 @@ impl PackageManager for NpmManager {
 }
 
 fn run_npm_command(args: &[&str]) -> Option<String> {
-    #[cfg(target_os = "windows")]
-    let output = Command::new("cmd")
-        .args(["/C", &format!("npm {}", args.join(" "))])
-        .output()
-        .ok()?;
-
-    #[cfg(not(target_os = "windows"))]
-    let output = Command::new("npm").args(args).output().ok()?;
+    let output = command_no_window("npm").args(args).output().ok()?;
 
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).to_string())

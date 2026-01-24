@@ -10,7 +10,8 @@ export function CacheView() {
     const [isCleaning, setIsCleaning] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [selectedCaches, setSelectedCaches] = useState<Set<string>>(new Set());
+    const [selectedPackageCaches, setSelectedPackageCaches] = useState<Set<string>>(new Set());
+    const [selectedProjectCaches, setSelectedProjectCaches] = useState<Set<string>>(new Set());
     const [projectPath, setProjectPath] = useState('');
     const [activeTab, setActiveTab] = useState<'package' | 'project'>('package');
 
@@ -31,7 +32,7 @@ export function CacheView() {
 
     const handleScanProjectCaches = useCallback(async () => {
         if (!projectPath.trim()) {
-            setError('Please enter a project directory path');
+            setError(t('cache.error_no_project_path'));
             return;
         }
 
@@ -50,6 +51,8 @@ export function CacheView() {
     }, [projectPath]);
 
     const toggleCacheSelection = (path: string) => {
+        const selectedCaches = activeTab === 'package' ? selectedPackageCaches : selectedProjectCaches;
+        const setSelectedCaches = activeTab === 'package' ? setSelectedPackageCaches : setSelectedProjectCaches;
         const newSelected = new Set(selectedCaches);
         if (newSelected.has(path)) {
             newSelected.delete(path);
@@ -59,21 +62,30 @@ export function CacheView() {
         setSelectedCaches(newSelected);
     };
 
-    const selectAllCaches = (caches: CacheInfo[]) => {
-        const newSelected = new Set(selectedCaches);
+    const selectAllCaches = (
+        caches: CacheInfo[],
+        selected: Set<string>,
+        setSelected: (next: Set<string>) => void
+    ) => {
+        const newSelected = new Set(selected);
         caches.forEach(c => newSelected.add(c.path));
-        setSelectedCaches(newSelected);
+        setSelected(newSelected);
     };
 
-    const deselectAllCaches = (caches: CacheInfo[]) => {
-        const newSelected = new Set(selectedCaches);
+    const deselectAllCaches = (
+        caches: CacheInfo[],
+        selected: Set<string>,
+        setSelected: (next: Set<string>) => void
+    ) => {
+        const newSelected = new Set(selected);
         caches.forEach(c => newSelected.delete(c.path));
-        setSelectedCaches(newSelected);
+        setSelected(newSelected);
     };
 
     const handleCleanSelected = async () => {
+        const selectedCaches = activeTab === 'package' ? selectedPackageCaches : selectedProjectCaches;
         if (selectedCaches.size === 0) {
-            setError('Please select at least one cache to clean');
+            setError(t('cache.error_no_selection'));
             return;
         }
 
@@ -83,8 +95,9 @@ export function CacheView() {
 
         const sizeDisplay = formatSize(totalSize);
 
-        if (!confirm(t('cache.confirm_clean', { count: selectedCaches.size, size: sizeDisplay }) ||
-            `Are you sure you want to clean ${selectedCaches.size} caches (${sizeDisplay})?`)) {
+        const selectedPaths = [...selectedCaches];
+
+        if (!confirm(t('cache.confirm_clean', { count: selectedPaths.length, size: sizeDisplay }))) {
             return;
         }
 
@@ -93,24 +106,25 @@ export function CacheView() {
         setSuccess(null);
 
         try {
-            const results = await cleanMultipleCaches([...selectedCaches]);
+            const results = await cleanMultipleCaches(selectedPaths);
             const successCount = results.filter(r => r.Ok).length;
             const failCount = results.filter(r => r.Err).length;
 
             if (failCount > 0) {
                 const errors = results.filter(r => r.Err).map(r => r.Err).join('\n');
-                setError(`${failCount} failed:\n${errors}`);
+                setError(t('cache.partial_failed', { count: failCount, errors }));
             }
 
             if (successCount > 0) {
-                setSuccess(`Successfully cleaned ${successCount} caches`);
+                setSuccess(t('cache.success_cleaned', { count: successCount }));
             }
 
             // Refresh
-            setSelectedCaches(new Set());
             if (activeTab === 'package') {
+                setSelectedPackageCaches(new Set());
                 await handleScanPackageCaches();
             } else {
+                setSelectedProjectCaches(new Set());
                 await handleScanProjectCaches();
             }
         } catch (e) {
@@ -121,8 +135,8 @@ export function CacheView() {
     };
 
     const handleCleanSingle = async (cache: CacheInfo) => {
-        if (!confirm(t('cache.confirm_clean_single', { name: cache.name, size: cache.size_display }) ||
-            `Are you sure you want to clean ${cache.name} (${cache.size_display})?`)) {
+        const displayName = getCacheDisplayName(cache);
+        if (!confirm(t('cache.confirm_clean_single', { name: displayName, size: cache.size_display }))) {
             return;
         }
 
@@ -131,8 +145,8 @@ export function CacheView() {
         setSuccess(null);
 
         try {
-            const result = await cleanCache(cache.path);
-            setSuccess(result);
+            await cleanCache(cache.path);
+            setSuccess(t('cache.success_clean_single', { name: displayName, size: cache.size_display }));
 
             // Refresh
             if (activeTab === 'package') {
@@ -159,10 +173,38 @@ export function CacheView() {
     };
 
     const currentCaches = activeTab === 'package' ? packageCaches : projectCaches;
+    const selectedCaches = activeTab === 'package' ? selectedPackageCaches : selectedProjectCaches;
     const totalSize = currentCaches.reduce((sum, c) => sum + c.size, 0);
     const selectedSize = currentCaches
         .filter(c => selectedCaches.has(c.path))
         .reduce((sum, c) => sum + c.size, 0);
+
+    const cacheNameMap: Record<string, string> = {
+        'npm Cache': t('cache.names.npm'),
+        'Yarn Cache': t('cache.names.yarn'),
+        'pnpm Cache': t('cache.names.pnpm'),
+        'pip Cache': t('cache.names.pip'),
+        'Conda Cache': t('cache.names.conda'),
+        'Cargo Cache': t('cache.names.cargo'),
+        'Composer Cache': t('cache.names.composer'),
+        'Maven Cache': t('cache.names.maven'),
+        'Gradle Cache': t('cache.names.gradle'),
+        'Homebrew Cache': t('cache.names.homebrew'),
+        'Go Modules Cache': t('cache.names.go_modules'),
+        'Node Modules': t('cache.names.node_modules'),
+        'Rust Target': t('cache.names.rust_target'),
+        'Python Cache': t('cache.names.python_cache'),
+        'Gradle Build': t('cache.names.gradle_build'),
+        'Build Output': t('cache.names.build_output'),
+        'Dist Output': t('cache.names.dist_output'),
+        'Next.js Cache': t('cache.names.next_cache'),
+        'Nuxt.js Cache': t('cache.names.nuxt_cache'),
+        'Turbo Cache': t('cache.names.turbo_cache'),
+        'Python Venv': t('cache.names.python_venv'),
+        'Vendor Directory': t('cache.names.vendor_directory'),
+    };
+
+    const getCacheDisplayName = (cache: CacheInfo) => cacheNameMap[cache.name] || cache.name;
 
     return (
         <div className="view-container">
@@ -171,10 +213,13 @@ export function CacheView() {
                     <p className="text-secondary">{t('cache.description')}</p>
                     {currentCaches.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            Total: {formatSize(totalSize)}
+                            {t('cache.total_size', { size: formatSize(totalSize) })}
                             {selectedCaches.size > 0 && (
                                 <span className="badge badge-primary" style={{ marginLeft: 8 }}>
-                                    {selectedCaches.size} selected ({formatSize(selectedSize)})
+                                    {t('cache.selected_summary', {
+                                        count: selectedCaches.size,
+                                        size: formatSize(selectedSize),
+                                    })}
                                 </span>
                             )}
                         </p>
@@ -245,11 +290,11 @@ export function CacheView() {
                         </button>
                         {packageCaches.length > 0 && (
                             <div className="select-actions">
-                                <button className="btn btn-secondary btn-small" onClick={() => selectAllCaches(packageCaches)}>
-                                    Select All
+                                <button className="btn btn-secondary btn-small" onClick={() => selectAllCaches(packageCaches, selectedPackageCaches, setSelectedPackageCaches)}>
+                                    {t('common.select_all')}
                                 </button>
-                                <button className="btn btn-secondary btn-small" onClick={() => deselectAllCaches(packageCaches)}>
-                                    Deselect All
+                                <button className="btn btn-secondary btn-small" onClick={() => deselectAllCaches(packageCaches, selectedPackageCaches, setSelectedPackageCaches)}>
+                                    {t('common.deselect_all')}
                                 </button>
                             </div>
                         )}
@@ -274,11 +319,11 @@ export function CacheView() {
                                                 <td>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedCaches.has(cache.path)}
+                                                        checked={selectedPackageCaches.has(cache.path)}
                                                         onChange={() => toggleCacheSelection(cache.path)}
                                                     />
                                                 </td>
-                                                <td><strong>{cache.name}</strong></td>
+                                                <td><strong>{getCacheDisplayName(cache)}</strong></td>
                                                 <td className="path-cell">{cache.path}</td>
                                                 <td className="size-cell">{cache.size_display}</td>
                                                 <td>
@@ -307,7 +352,7 @@ export function CacheView() {
                         <input
                             type="text"
                             className="path-input"
-                            placeholder="Enter project directory path..."
+                            placeholder={t('cache.project_path_placeholder')}
                             value={projectPath}
                             onChange={(e) => setProjectPath(e.target.value)}
                         />
@@ -330,12 +375,12 @@ export function CacheView() {
                     {projectCaches.length > 0 && (
                         <>
                             <div className="select-actions">
-                                <button className="btn btn-secondary btn-small" onClick={() => selectAllCaches(projectCaches)}>
-                                    Select All
-                                </button>
-                                <button className="btn btn-secondary btn-small" onClick={() => deselectAllCaches(projectCaches)}>
-                                    Deselect All
-                                </button>
+                                    <button className="btn btn-secondary btn-small" onClick={() => selectAllCaches(projectCaches, selectedProjectCaches, setSelectedProjectCaches)}>
+                                        {t('common.select_all')}
+                                    </button>
+                                    <button className="btn btn-secondary btn-small" onClick={() => deselectAllCaches(projectCaches, selectedProjectCaches, setSelectedProjectCaches)}>
+                                        {t('common.deselect_all')}
+                                    </button>
                             </div>
                             <div className="card">
                                 <div className="table-container">
@@ -355,11 +400,11 @@ export function CacheView() {
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedCaches.has(cache.path)}
+                                                            checked={selectedProjectCaches.has(cache.path)}
                                                             onChange={() => toggleCacheSelection(cache.path)}
                                                         />
                                                     </td>
-                                                    <td><strong>{cache.name}</strong></td>
+                                                    <td><strong>{getCacheDisplayName(cache)}</strong></td>
                                                     <td className="path-cell">{cache.path}</td>
                                                     <td className="size-cell">{cache.size_display}</td>
                                                     <td>

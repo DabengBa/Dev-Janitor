@@ -1,11 +1,10 @@
 //! Service monitoring module for Dev Janitor v2
 //! Port scanning and process management using sysinfo
 
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::process::Command;
 use sysinfo::{Pid, ProcessStatus, System};
+
+use crate::utils::command::command_no_window;
 
 /// Represents a running process
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -270,7 +269,7 @@ pub fn get_ports_in_use() -> Vec<PortInfo> {
 
 #[cfg(target_os = "windows")]
 fn get_ports_windows() -> Vec<PortInfo> {
-    let output = Command::new("cmd").args(["/C", "netstat -ano"]).output();
+    let output = command_no_window("netstat").args(["-ano"]).output();
 
     let output = match output {
         Ok(o) => o,
@@ -331,13 +330,13 @@ fn get_ports_windows() -> Vec<PortInfo> {
 #[cfg(not(target_os = "windows"))]
 fn get_ports_unix() -> Vec<PortInfo> {
     // Try ss first, then lsof
-    let output = Command::new("ss").args(["-tulpn"]).output();
+    let output = command_no_window("ss").args(["-tulpn"]).output();
 
     let output = match output {
         Ok(o) if o.status.success() => o,
         _ => {
             // Try lsof
-            match Command::new("lsof").args(["-i", "-P", "-n"]).output() {
+            match command_no_window("lsof").args(["-i", "-P", "-n"]).output() {
                 Ok(o) => o,
                 Err(_) => return Vec::new(),
             }

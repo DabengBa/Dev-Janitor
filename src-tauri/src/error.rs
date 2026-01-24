@@ -2,6 +2,7 @@
 
 use thiserror::Error;
 
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum DevJanitorError {
     #[error("IO error: {0}")]

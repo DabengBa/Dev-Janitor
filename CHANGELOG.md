@@ -5,6 +5,20 @@ All notable changes to Dev Janitor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-01-24
+
+### 修复
+- 修复缓存清理在不同标签页之间的选中状态混用问题
+- 修复 AI 清理白名单目录仍会继续递归扫描的问题
+- 修复 Gemini CLI 安装包名错误
+
+### 优化
+- Windows 下执行命令不再弹出终端窗口，减少“闪烁”现象
+
+### 本地化
+- 补充缓存名称、AI 清理原因、服务状态等中文显示
+- 修正语言切换按钮的显示字符
+
 ## [2.0.0] - 2025-01-24
 
 ### 🎉 Complete Rebuild - v2.0

@@ -44,7 +44,7 @@ export function ServicesView() {
     }, []);
 
     const handleKillProcess = async (pid: number, name: string) => {
-        if (!confirm(`Terminate process "${name}" (PID: ${pid})?`)) {
+        if (!confirm(t('services.confirm_kill', { name, pid }))) {
             return;
         }
 
@@ -52,8 +52,8 @@ export function ServicesView() {
         setSuccess(null);
 
         try {
-            const result = await killProcess(pid);
-            setSuccess(result);
+            await killProcess(pid);
+            setSuccess(t('services.success_kill', { name, pid }));
             await handleRefreshProcesses();
         } catch (e) {
             setError(String(e));
@@ -93,6 +93,45 @@ export function ServicesView() {
         'Other': '#8c8c8c',
     };
 
+    const categoryLabels: Record<string, string> = {
+        'Runtime': t('services.categories.runtime'),
+        'Package Manager': t('services.categories.package_manager'),
+        'Build Tool': t('services.categories.build_tool'),
+        'Server': t('services.categories.server'),
+        'Database': t('services.categories.database'),
+        'Container': t('services.categories.container'),
+        'IDE': t('services.categories.ide'),
+        'Editor': t('services.categories.editor'),
+        'AI Tool': t('services.categories.ai_tool'),
+        'Version Control': t('services.categories.version_control'),
+        'Dev Server': t('services.categories.dev_server'),
+        'Other': t('services.categories.other'),
+    };
+
+    const statusLabels: Record<string, string> = {
+        Running: t('services.status.running'),
+        Sleeping: t('services.status.sleeping'),
+        Idle: t('services.status.idle'),
+        Zombie: t('services.status.zombie'),
+        Stopped: t('services.status.stopped'),
+        Unknown: t('services.status.unknown'),
+    };
+
+    const portStateLabels: Record<string, string> = {
+        LISTEN: t('services.state.listen'),
+        LISTENING: t('services.state.listen'),
+        ESTABLISHED: t('services.state.established'),
+        ESTAB: t('services.state.established'),
+        TIME_WAIT: t('services.state.time_wait'),
+        CLOSE_WAIT: t('services.state.close_wait'),
+        CLOSED: t('services.state.closed'),
+        SYN_SENT: t('services.state.syn_sent'),
+        SYN_RECV: t('services.state.syn_recv'),
+        FIN_WAIT1: t('services.state.fin_wait1'),
+        FIN_WAIT2: t('services.state.fin_wait2'),
+        N/A: t('services.state.na'),
+    };
+
     return (
         <div className="view-container">
             <div className="view-header">
@@ -100,12 +139,15 @@ export function ServicesView() {
                     <p className="text-secondary">{t('services.description')}</p>
                     {activeTab === 'processes' && processes.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            {processes.length} dev processes using {formatMemory(totalMemory)}
+                            {t('services.summary_processes', {
+                                count: processes.length,
+                                memory: formatMemory(totalMemory),
+                            })}
                         </p>
                     )}
                     {activeTab === 'ports' && ports.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            {ports.length} ports in use
+                            {t('services.summary_ports', { count: ports.length })}
                         </p>
                     )}
                 </div>
@@ -117,13 +159,13 @@ export function ServicesView() {
                     className={`tab ${activeTab === 'processes' ? 'active' : ''}`}
                     onClick={() => setActiveTab('processes')}
                 >
-                    Processes
+                    {t('services.tab_processes')}
                 </button>
                 <button
                     className={`tab ${activeTab === 'ports' ? 'active' : ''}`}
                     onClick={() => setActiveTab('ports')}
                 >
-                    Ports
+                    {t('services.tab_ports')}
                 </button>
             </div>
 
@@ -151,7 +193,7 @@ export function ServicesView() {
                             {isLoading ? (
                                 <span className="spinner" style={{ width: 14, height: 14 }} />
                             ) : (
-                                'Refresh'
+                                t('common.refresh')
                             )}
                         </button>
                         {categories.length > 0 && (
@@ -160,10 +202,10 @@ export function ServicesView() {
                                 value={filterCategory}
                                 onChange={(e) => setFilterCategory(e.target.value)}
                             >
-                                <option value="all">All Categories ({processes.length})</option>
+                                <option value="all">{t('services.filter_all_categories', { count: processes.length })}</option>
                                 {categories.map(cat => (
                                     <option key={cat} value={cat}>
-                                        {cat} ({processes.filter(p => p.category === cat).length})
+                                        {categoryLabels[cat] || cat} ({processes.filter(p => p.category === cat).length})
                                     </option>
                                 ))}
                             </select>
@@ -176,14 +218,14 @@ export function ServicesView() {
                                 <table className="table">
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '8%' }}>PID</th>
-                                            <th style={{ width: '20%' }}>Name</th>
-                                            <th style={{ width: '15%' }}>Category</th>
-                                            <th style={{ width: '12%' }}>Memory</th>
-                                            <th style={{ width: '10%' }}>CPU</th>
-                                            <th style={{ width: '10%' }}>Status</th>
-                                            <th style={{ width: '15%' }}>Path</th>
-                                            <th style={{ width: '10%' }}>Action</th>
+                                            <th style={{ width: '8%' }}>{t('services.table_pid')}</th>
+                                            <th style={{ width: '20%' }}>{t('services.table_name')}</th>
+                                            <th style={{ width: '15%' }}>{t('services.table_category')}</th>
+                                            <th style={{ width: '12%' }}>{t('services.table_memory')}</th>
+                                            <th style={{ width: '10%' }}>{t('services.table_cpu')}</th>
+                                            <th style={{ width: '10%' }}>{t('services.table_status')}</th>
+                                            <th style={{ width: '15%' }}>{t('services.table_path')}</th>
+                                            <th style={{ width: '10%' }}>{t('services.table_action')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -196,19 +238,19 @@ export function ServicesView() {
                                                         className="category-badge"
                                                         style={{ backgroundColor: categoryColors[proc.category] || '#8c8c8c' }}
                                                     >
-                                                        {proc.category}
+                                                        {categoryLabels[proc.category] || proc.category}
                                                     </span>
                                                 </td>
                                                 <td className="memory-cell">{proc.memory_display}</td>
                                                 <td>{proc.cpu.toFixed(1)}%</td>
-                                                <td>{proc.status}</td>
+                                                <td>{statusLabels[proc.status] || proc.status}</td>
                                                 <td className="path-cell">{proc.exe_path}</td>
                                                 <td>
                                                     <button
                                                         className="btn btn-danger btn-small"
                                                         onClick={() => handleKillProcess(proc.pid, proc.name)}
                                                     >
-                                                        Kill
+                                                        {t('services.kill')}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -233,7 +275,7 @@ export function ServicesView() {
                             {isLoading ? (
                                 <span className="spinner" style={{ width: 14, height: 14 }} />
                             ) : (
-                                'Refresh'
+                                t('common.refresh')
                             )}
                         </button>
                     </div>
@@ -244,12 +286,12 @@ export function ServicesView() {
                                 <table className="table">
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '15%' }}>Port</th>
-                                            <th style={{ width: '15%' }}>Protocol</th>
-                                            <th style={{ width: '25%' }}>Process</th>
-                                            <th style={{ width: '15%' }}>PID</th>
-                                            <th style={{ width: '20%' }}>State</th>
-                                            <th style={{ width: '10%' }}>Action</th>
+                                            <th style={{ width: '15%' }}>{t('services.table_port')}</th>
+                                            <th style={{ width: '15%' }}>{t('services.table_protocol')}</th>
+                                            <th style={{ width: '25%' }}>{t('services.table_process')}</th>
+                                            <th style={{ width: '15%' }}>{t('services.table_pid')}</th>
+                                            <th style={{ width: '20%' }}>{t('services.table_state')}</th>
+                                            <th style={{ width: '10%' }}>{t('services.table_action')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -265,13 +307,13 @@ export function ServicesView() {
                                                 </td>
                                                 <td><strong>{port.process_name}</strong></td>
                                                 <td><code>{port.pid}</code></td>
-                                                <td>{port.state}</td>
+                                                <td>{portStateLabels[port.state.toUpperCase()] || port.state}</td>
                                                 <td>
                                                     <button
                                                         className="btn btn-danger btn-small"
                                                         onClick={() => handleKillProcess(port.pid, port.process_name)}
                                                     >
-                                                        Kill
+                                                        {t('services.kill')}
                                                     </button>
                                                 </td>
                                             </tr>

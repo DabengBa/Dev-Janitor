@@ -4,7 +4,8 @@
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
-use std::process::Command;
+
+use crate::utils::command::command_no_window;
 
 /// Represents an AI CLI tool
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,9 +63,9 @@ pub fn get_ai_cli_tools() -> Vec<AiCliTool> {
             description: "Google's Gemini AI coding assistant".to_string(),
             installed: false,
             version: None,
-            install_command: "npm install -g @anthropic-ai/gemini-cli".to_string(),
-            update_command: "npm update -g @anthropic-ai/gemini-cli".to_string(),
-            uninstall_command: "npm uninstall -g @anthropic-ai/gemini-cli".to_string(),
+            install_command: "npm install -g @google/gemini-cli".to_string(),
+            update_command: "npm update -g @google/gemini-cli".to_string(),
+            uninstall_command: "npm uninstall -g @google/gemini-cli".to_string(),
             docs_url: "https://ai.google.dev/gemini-api/docs".to_string(),
             config_paths: find_config_files("gemini"),
         }),
@@ -226,14 +227,7 @@ fn check_tool(mut tool: AiCliTool) -> AiCliTool {
 
 /// Run a command and extract version
 fn run_command_get_version(cmd: &str, args: &[&str]) -> Option<String> {
-    #[cfg(target_os = "windows")]
-    let output = Command::new("cmd")
-        .args(["/C", &format!("{} {}", cmd, args.join(" "))])
-        .output()
-        .ok()?;
-
-    #[cfg(not(target_os = "windows"))]
-    let output = Command::new(cmd).args(args).output().ok()?;
+    let output = command_no_window(cmd).args(args).output().ok()?;
 
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -302,10 +296,10 @@ pub fn uninstall_ai_tool(tool_id: &str) -> Result<String, String> {
 /// Run an installation command
 fn run_install_command(command: &str) -> Result<String, String> {
     #[cfg(target_os = "windows")]
-    let output = Command::new("cmd").args(["/C", command]).output();
+    let output = command_no_window("cmd").args(["/C", command]).output();
 
     #[cfg(not(target_os = "windows"))]
-    let output = Command::new("sh").args(["-c", command]).output();
+    let output = command_no_window("sh").args(["-c", command]).output();
 
     match output {
         Ok(out) => {

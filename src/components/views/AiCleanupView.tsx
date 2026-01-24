@@ -16,7 +16,7 @@ export function AiCleanupView() {
 
     const handleScan = useCallback(async () => {
         if (!scanPath.trim()) {
-            setError('Please enter a directory path to scan');
+            setError(t('ai_cleanup.error_no_path'));
             return;
         }
 
@@ -29,7 +29,7 @@ export function AiCleanupView() {
             const files = await scanAiJunk(scanPath, scanDepth);
             setJunkFiles(files);
             if (files.length === 0) {
-                setSuccess('No AI junk files found in this directory');
+                setSuccess(t('ai_cleanup.empty_result'));
             }
         } catch (e) {
             setError(String(e));
@@ -58,12 +58,11 @@ export function AiCleanupView() {
 
     const handleDeleteSelected = async () => {
         if (selectedFiles.size === 0) {
-            setError('Please select at least one file to delete');
+            setError(t('ai_cleanup.error_no_selection'));
             return;
         }
 
-        if (!confirm(t('ai_cleanup.confirm_delete', { count: selectedFiles.size }) ||
-            `Are you sure you want to delete ${selectedFiles.size} files?`)) {
+        if (!confirm(t('ai_cleanup.confirm_delete', { count: selectedFiles.size }))) {
             return;
         }
 
@@ -78,11 +77,11 @@ export function AiCleanupView() {
 
             if (failCount > 0) {
                 const errors = results.filter(r => r.Err).map(r => r.Err).slice(0, 3).join('\n');
-                setError(`${failCount} failed:\n${errors}`);
+                setError(t('ai_cleanup.partial_failed', { count: failCount, errors }));
             }
 
             if (successCount > 0) {
-                setSuccess(`Successfully deleted ${successCount} files`);
+                setSuccess(t('ai_cleanup.success_deleted', { count: successCount }));
             }
 
             // Refresh
@@ -96,7 +95,7 @@ export function AiCleanupView() {
     };
 
     const handleDeleteSingle = async (file: AiJunkFile) => {
-        if (!confirm(`Delete ${file.name}?`)) {
+        if (!confirm(t('ai_cleanup.confirm_delete_single', { name: file.name }))) {
             return;
         }
 
@@ -104,8 +103,8 @@ export function AiCleanupView() {
         setError(null);
 
         try {
-            const result = await deleteAiJunk(file.path);
-            setSuccess(result);
+            await deleteAiJunk(file.path);
+            setSuccess(t('ai_cleanup.success_deleted_single', { name: file.name, size: file.size_display }));
             await handleScan();
         } catch (e) {
             setError(String(e));
@@ -142,9 +141,62 @@ export function AiCleanupView() {
     };
 
     const typeLabels: Record<string, string> = {
-        ai_tool: 'AI Tool Files',
-        temp_file: 'Temporary Files',
-        anomalous: 'Anomalous Files',
+        ai_tool: t('ai_cleanup.type_ai_tool'),
+        temp_file: t('ai_cleanup.type_temp_file'),
+        anomalous: t('ai_cleanup.type_anomalous'),
+    };
+
+    const reasonDetails: Record<string, string> = {
+        'Aider AI assistant cache': t('ai_cleanup.reasons.aider_cache'),
+        'Aider chat history': t('ai_cleanup.reasons.aider_chat_history'),
+        'Aider input history': t('ai_cleanup.reasons.aider_input_history'),
+        'Aider tags cache': t('ai_cleanup.reasons.aider_tags_cache'),
+        'Claude AI cache directory': t('ai_cleanup.reasons.claude_cache'),
+        'Claude configuration': t('ai_cleanup.reasons.claude_config'),
+        'Claude config backup': t('ai_cleanup.reasons.claude_config_backup'),
+        'Claude output directory': t('ai_cleanup.reasons.claude_output'),
+        'Cursor AI cache': t('ai_cleanup.reasons.cursor_cache'),
+        'Cursor ignore file': t('ai_cleanup.reasons.cursor_ignore'),
+        'Cursor rules file': t('ai_cleanup.reasons.cursor_rules'),
+        'GitHub Copilot cache': t('ai_cleanup.reasons.copilot_cache'),
+        'Codeium AI cache': t('ai_cleanup.reasons.codeium_cache'),
+        'Tabnine AI cache': t('ai_cleanup.reasons.tabnine_cache'),
+        'OpenAI Codex cache': t('ai_cleanup.reasons.codex_cache'),
+        'Continue AI cache': t('ai_cleanup.reasons.continue_cache'),
+        'Amazon Q cache': t('ai_cleanup.reasons.amazonq_cache'),
+        'CodeWhisperer cache': t('ai_cleanup.reasons.codewhisperer_cache'),
+        'Windows NUL file (often created by AI tools)': t('ai_cleanup.reasons.windows_nul'),
+        'Generic AI cache': t('ai_cleanup.reasons.generic_ai_cache'),
+        'LLM cache directory': t('ai_cleanup.reasons.llm_cache'),
+        'Temporary file': t('ai_cleanup.reasons.temp_file'),
+        'Backup file': t('ai_cleanup.reasons.backup_file'),
+        'Original file backup': t('ai_cleanup.reasons.original_backup'),
+        'Old file': t('ai_cleanup.reasons.old_file'),
+        'Editor temporary file': t('ai_cleanup.reasons.editor_temp'),
+        'Vim swap file': t('ai_cleanup.reasons.vim_swap'),
+        'macOS metadata': t('ai_cleanup.reasons.macos_metadata'),
+        'Windows thumbnail cache': t('ai_cleanup.reasons.windows_thumbs'),
+        'Windows desktop config': t('ai_cleanup.reasons.windows_desktop'),
+        'Zero-byte file': t('ai_cleanup.reasons.zero_byte'),
+        'Suspicious single-character name': t('ai_cleanup.reasons.suspicious_char'),
+        'Name contains only special characters': t('ai_cleanup.reasons.special_chars'),
+    };
+
+    const reasonPrefixes: Record<string, string> = {
+        'AI Tool': t('ai_cleanup.reason_prefix_ai_tool'),
+        'Temp': t('ai_cleanup.reason_prefix_temp'),
+    };
+
+    const translateReason = (reason: string) => {
+        const match = reason.match(/^(AI Tool|Temp):\\s*(.+?)\\s*-\\s*(.+)$/);
+        if (match) {
+            const [, prefix, pattern, detail] = match;
+            const prefixLabel = reasonPrefixes[prefix] || `${prefix}:`;
+            const detailLabel = reasonDetails[detail] || detail;
+            return `${prefixLabel} ${pattern} - ${detailLabel}`;
+        }
+
+        return reasonDetails[reason] || reason;
     };
 
     return (
@@ -154,10 +206,16 @@ export function AiCleanupView() {
                     <p className="text-secondary">{t('ai_cleanup.description')}</p>
                     {junkFiles.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            Found {junkFiles.length} files ({formatSize(totalSize)})
+                            {t('ai_cleanup.found_summary', {
+                                count: junkFiles.length,
+                                size: formatSize(totalSize),
+                            })}
                             {selectedFiles.size > 0 && (
                                 <span className="badge badge-primary" style={{ marginLeft: 8 }}>
-                                    {selectedFiles.size} selected ({formatSize(selectedSize)})
+                                    {t('ai_cleanup.selected_summary', {
+                                        count: selectedFiles.size,
+                                        size: formatSize(selectedSize),
+                                    })}
                                 </span>
                             )}
                         </p>
@@ -184,7 +242,7 @@ export function AiCleanupView() {
                     <input
                         type="text"
                         className="path-input"
-                        placeholder="Enter directory path to scan (e.g., C:\Users\...)"
+                        placeholder={t('ai_cleanup.scan_placeholder')}
                         value={scanPath}
                         onChange={(e) => setScanPath(e.target.value)}
                     />
@@ -193,10 +251,10 @@ export function AiCleanupView() {
                         value={scanDepth}
                         onChange={(e) => setScanDepth(Number(e.target.value))}
                     >
-                        <option value={3}>Depth: 3</option>
-                        <option value={5}>Depth: 5</option>
-                        <option value={10}>Depth: 10</option>
-                        <option value={20}>Depth: 20</option>
+                        <option value={3}>{t('ai_cleanup.depth_option', { depth: 3 })}</option>
+                        <option value={5}>{t('ai_cleanup.depth_option', { depth: 5 })}</option>
+                        <option value={10}>{t('ai_cleanup.depth_option', { depth: 10 })}</option>
+                        <option value={20}>{t('ai_cleanup.depth_option', { depth: 20 })}</option>
                     </select>
                     <button
                         className="btn btn-primary"
@@ -206,7 +264,7 @@ export function AiCleanupView() {
                         {isScanning ? (
                             <>
                                 <span className="spinner" style={{ width: 14, height: 14 }} />
-                                Scanning...
+                                {t('ai_cleanup.scanning')}
                             </>
                         ) : (
                             t('ai_cleanup.scan')
@@ -235,7 +293,7 @@ export function AiCleanupView() {
                             className={`filter-btn ${filterType === 'all' ? 'active' : ''}`}
                             onClick={() => setFilterType('all')}
                         >
-                            All ({junkFiles.length})
+                            {t('ai_cleanup.filter_all')} ({junkFiles.length})
                         </button>
                         {Object.entries(typeStats).map(([type, count]) => (
                             <button
@@ -249,10 +307,10 @@ export function AiCleanupView() {
                     </div>
                     <div className="select-actions">
                         <button className="btn btn-secondary btn-small" onClick={selectAll}>
-                            Select All
+                            {t('common.select_all')}
                         </button>
                         <button className="btn btn-secondary btn-small" onClick={deselectAll}>
-                            Deselect
+                            {t('common.deselect_all')}
                         </button>
                     </div>
                 </div>
@@ -266,11 +324,11 @@ export function AiCleanupView() {
                             <thead>
                                 <tr>
                                     <th style={{ width: '5%' }}></th>
-                                    <th style={{ width: '20%' }}>Name</th>
-                                    <th style={{ width: '35%' }}>Path</th>
-                                    <th style={{ width: '10%' }}>Size</th>
-                                    <th style={{ width: '20%' }}>Reason</th>
-                                    <th style={{ width: '10%' }}>Action</th>
+                                    <th style={{ width: '20%' }}>{t('ai_cleanup.filename')}</th>
+                                    <th style={{ width: '35%' }}>{t('ai_cleanup.path')}</th>
+                                    <th style={{ width: '10%' }}>{t('ai_cleanup.size')}</th>
+                                    <th style={{ width: '20%' }}>{t('ai_cleanup.reason')}</th>
+                                    <th style={{ width: '10%' }}>{t('tools.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -286,19 +344,19 @@ export function AiCleanupView() {
                                         <td>
                                             <strong>{file.name}</strong>
                                             <span className={`type-badge ${file.junk_type}`}>
-                                                {file.junk_type}
+                                                {typeLabels[file.junk_type] || file.junk_type}
                                             </span>
                                         </td>
                                         <td className="path-cell">{file.path}</td>
                                         <td className="size-cell">{file.size_display}</td>
-                                        <td className="reason-cell">{file.reason}</td>
+                                        <td className="reason-cell">{translateReason(file.reason)}</td>
                                         <td>
                                             <button
                                                 className="btn btn-danger btn-small"
                                                 onClick={() => handleDeleteSingle(file)}
                                                 disabled={isDeleting}
                                             >
-                                                Delete
+                                                {t('ai_cleanup.delete')}
                                             </button>
                                         </td>
                                     </tr>

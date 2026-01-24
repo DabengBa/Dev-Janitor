@@ -44,8 +44,10 @@ export function ConfigView() {
                     <p className="text-secondary">{t('config.description')}</p>
                     {diagnosis && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            {diagnosis.path_entries.length} PATH entries,
-                            {existingShellConfigs.length} shell configs found
+                            {t('config.summary', {
+                                paths: diagnosis.path_entries.length,
+                                configs: existingShellConfigs.length,
+                            })}
                         </p>
                     )}
                 </div>
@@ -57,7 +59,7 @@ export function ConfigView() {
                     {isLoading ? (
                         <>
                             <span className="spinner" style={{ width: 14, height: 14 }} />
-                            Diagnosing...
+                            {t('config.diagnosing')}
                         </>
                     ) : (
                         t('config.diagnose')
@@ -71,7 +73,7 @@ export function ConfigView() {
                     className={`tab ${activeTab === 'path' ? 'active' : ''}`}
                     onClick={() => setActiveTab('path')}
                 >
-                    PATH Variables
+                    {t('config.tab_path')}
                     {diagnosis && (
                         <span className="tab-count">{diagnosis.path_entries.length}</span>
                     )}
@@ -80,7 +82,7 @@ export function ConfigView() {
                     className={`tab ${activeTab === 'shell' ? 'active' : ''}`}
                     onClick={() => setActiveTab('shell')}
                 >
-                    Shell Configs
+                    {t('config.tab_shell')}
                     {diagnosis && (
                         <span className="tab-count">{existingShellConfigs.length}</span>
                     )}
@@ -89,7 +91,7 @@ export function ConfigView() {
                     className={`tab ${activeTab === 'issues' ? 'active' : ''}`}
                     onClick={() => setActiveTab('issues')}
                 >
-                    Issues
+                    {t('config.tab_issues')}
                     {diagnosis && diagnosis.issues.length > 0 && (
                         <span className="tab-count warning">{diagnosis.issues.length}</span>
                     )}
@@ -112,7 +114,7 @@ export function ConfigView() {
                                 checked={showDevOnly}
                                 onChange={(e) => setShowDevOnly(e.target.checked)}
                             />
-                            Show dev-related only
+                            {t('config.filter_dev_only')}
                         </label>
                     </div>
 
@@ -121,11 +123,11 @@ export function ConfigView() {
                             <table className="table">
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '5%' }}>#</th>
-                                        <th style={{ width: '45%' }}>Path</th>
-                                        <th style={{ width: '15%' }}>Category</th>
-                                        <th style={{ width: '10%' }}>Exists</th>
-                                        <th style={{ width: '25%' }}>Issues</th>
+                                        <th style={{ width: '5%' }}>{t('config.table_index')}</th>
+                                        <th style={{ width: '45%' }}>{t('config.table_path')}</th>
+                                        <th style={{ width: '15%' }}>{t('config.table_category')}</th>
+                                        <th style={{ width: '10%' }}>{t('config.table_exists')}</th>
+                                        <th style={{ width: '25%' }}>{t('config.table_issues')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -140,9 +142,9 @@ export function ConfigView() {
                                             </td>
                                             <td>
                                                 {entry.exists ? (
-                                                    <span className="status-ok">✓</span>
+                                                    <span className="status-ok">{t('common.yes')}</span>
                                                 ) : (
-                                                    <span className="status-error">✗</span>
+                                                    <span className="status-error">{t('common.no')}</span>
                                                 )}
                                             </td>
                                             <td>
@@ -166,7 +168,7 @@ export function ConfigView() {
                 <div className="tab-content">
                     {existingShellConfigs.length === 0 ? (
                         <div className="card empty-state">
-                            <p>No shell configuration files found</p>
+                            <p>{t('config.no_shell_configs')}</p>
                         </div>
                     ) : (
                         <div className="shell-configs">
@@ -179,7 +181,7 @@ export function ConfigView() {
 
                                     {config.dev_exports.length > 0 && (
                                         <div className="exports-section">
-                                            <h5>Dev-related exports ({config.dev_exports.length})</h5>
+                                            <h5>{t('config.dev_exports', { count: config.dev_exports.length })}</h5>
                                             <pre className="exports-code">
                                                 {config.dev_exports.join('\n')}
                                             </pre>
@@ -205,13 +207,13 @@ export function ConfigView() {
                 <div className="tab-content">
                     {diagnosis.issues.length === 0 && diagnosis.suggestions.length === 0 ? (
                         <div className="card success-card">
-                            <p>No issues found! Your environment looks good.</p>
+                            <p>{t('config.no_issues')}</p>
                         </div>
                     ) : (
                         <>
                             {diagnosis.issues.length > 0 && (
                                 <div className="card">
-                                    <h4 className="section-title">Issues Found</h4>
+                                    <h4 className="section-title">{t('config.issues_found')}</h4>
                                     <div className="issues-list">
                                         {diagnosis.issues.map((issue, idx) => (
                                             <div key={idx} className="issue-item">
@@ -225,7 +227,9 @@ export function ConfigView() {
                                                     <strong className="issue-category">{issue.category}</strong>
                                                     <p className="issue-message">{issue.message}</p>
                                                     {issue.suggestion && (
-                                                        <p className="issue-suggestion">💡 {issue.suggestion}</p>
+                                                        <p className="issue-suggestion">
+                                                            {t('config.suggestion', { suggestion: issue.suggestion })}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </div>
@@ -236,7 +240,7 @@ export function ConfigView() {
 
                             {diagnosis.suggestions.length > 0 && (
                                 <div className="card">
-                                    <h4 className="section-title">Suggestions</h4>
+                                    <h4 className="section-title">{t('config.suggestions')}</h4>
                                     <ul className="suggestions-list">
                                         {diagnosis.suggestions.map((suggestion, idx) => (
                                             <li key={idx}>{suggestion}</li>

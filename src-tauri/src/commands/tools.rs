@@ -1,7 +1,8 @@
 //! Tauri commands for tool detection and management
 
 use crate::detection::{scan_all_tools, ToolInfo};
-use std::process::Command;
+
+use crate::utils::command::command_no_window;
 
 /// Scan for all development tools
 #[tauri::command]
@@ -120,13 +121,7 @@ pub fn uninstall_tool(tool_id: String, path: String) -> Result<String, String> {
 
 /// Run a command and return result
 fn run_command(cmd: &str, args: &[&str]) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    let output = Command::new("cmd")
-        .args(["/C", &format!("{} {}", cmd, args.join(" "))])
-        .output();
-
-    #[cfg(not(target_os = "windows"))]
-    let output = Command::new(cmd).args(args).output();
+    let output = command_no_window(cmd).args(args).output();
 
     match output {
         Ok(output) => {

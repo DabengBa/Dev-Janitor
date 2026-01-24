@@ -5,7 +5,8 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::process::Command;
+
+use crate::utils::command::command_no_window;
 
 /// Represents a detected tool version
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -355,14 +356,7 @@ fn get_tool_rules() -> Vec<ToolRule> {
 
 /// Execute a command and capture output
 fn execute_command(cmd: &str, args: &[&str]) -> Option<(String, String)> {
-    #[cfg(target_os = "windows")]
-    let output = Command::new("cmd")
-        .args(["/C", &format!("{} {}", cmd, args.join(" "))])
-        .output()
-        .ok()?;
-
-    #[cfg(not(target_os = "windows"))]
-    let output = Command::new(cmd).args(args).output().ok()?;
+    let output = command_no_window(cmd).args(args).output().ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -549,10 +543,7 @@ pub fn scan_all_tools() -> Vec<ToolInfo> {
     let rules = get_tool_rules();
 
     // Use parallel scanning for better performance
-    rules
-        .par_iter()
-        .filter_map(|rule| detect_tool(rule))
-        .collect()
+    rules.par_iter().filter_map(detect_tool).collect()
 }
 
 #[cfg(test)]

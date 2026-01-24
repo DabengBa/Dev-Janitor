@@ -13,6 +13,11 @@ export function AiCliView() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    const getToolDisplayName = (tool: AiCliTool) =>
+        t(`ai_cli.tools.${tool.id}.name`, { defaultValue: tool.name });
+    const getToolDescription = (tool: AiCliTool) =>
+        t(`ai_cli.tools.${tool.id}.description`, { defaultValue: tool.description });
+
     const handleRefresh = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -33,7 +38,8 @@ export function AiCliView() {
             return;
         }
 
-        if (!confirm(`Install ${tool.name}?\n\nCommand: ${tool.install_command}`)) {
+        const toolName = getToolDisplayName(tool);
+        if (!confirm(t('ai_cli.confirm_install', { name: toolName, command: tool.install_command }))) {
             return;
         }
 
@@ -43,7 +49,8 @@ export function AiCliView() {
 
         try {
             const result = await installAiTool(tool.id);
-            setSuccess(result);
+            const message = t('ai_cli.success_install', { name: toolName });
+            setSuccess(result.trim() ? `${message}\n${result}` : message);
             await handleRefresh();
         } catch (e) {
             setError(String(e));
@@ -53,7 +60,8 @@ export function AiCliView() {
     };
 
     const handleUpdate = async (tool: AiCliTool) => {
-        if (!confirm(`Update ${tool.name}?`)) {
+        const toolName = getToolDisplayName(tool);
+        if (!confirm(t('ai_cli.confirm_update', { name: toolName }))) {
             return;
         }
 
@@ -63,7 +71,8 @@ export function AiCliView() {
 
         try {
             const result = await updateAiTool(tool.id);
-            setSuccess(result);
+            const message = t('ai_cli.success_update', { name: toolName });
+            setSuccess(result.trim() ? `${message}\n${result}` : message);
             await handleRefresh();
         } catch (e) {
             setError(String(e));
@@ -73,7 +82,8 @@ export function AiCliView() {
     };
 
     const handleUninstall = async (tool: AiCliTool) => {
-        if (!confirm(`Uninstall ${tool.name}?`)) {
+        const toolName = getToolDisplayName(tool);
+        if (!confirm(t('ai_cli.confirm_uninstall', { name: toolName }))) {
             return;
         }
 
@@ -83,7 +93,8 @@ export function AiCliView() {
 
         try {
             const result = await uninstallAiTool(tool.id);
-            setSuccess(result);
+            const message = t('ai_cli.success_uninstall', { name: toolName });
+            setSuccess(result.trim() ? `${message}\n${result}` : message);
             await handleRefresh();
         } catch (e) {
             setError(String(e));
@@ -101,7 +112,7 @@ export function AiCliView() {
                     <p className="text-secondary">{t('ai_cli.description')}</p>
                     {tools.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            {installedCount} of {tools.length} tools installed
+                            {t('ai_cli.installed_summary', { installed: installedCount, total: tools.length })}
                         </p>
                     )}
                 </div>
@@ -113,10 +124,10 @@ export function AiCliView() {
                     {isLoading ? (
                         <>
                             <span className="spinner" style={{ width: 14, height: 14 }} />
-                            Scanning...
+                            {t('ai_cli.scanning')}
                         </>
                     ) : (
-                        'Refresh'
+                        t('common.refresh')
                     )}
                 </button>
             </div>
@@ -138,14 +149,14 @@ export function AiCliView() {
                     {tools.map((tool) => (
                         <div key={tool.id} className={`card tool-card ${tool.installed ? 'installed' : ''}`}>
                             <div className="tool-header">
-                                <h4>{tool.name}</h4>
+                                <h4>{getToolDisplayName(tool)}</h4>
                                 {tool.installed ? (
-                                    <span className="status-badge installed">Installed</span>
+                                    <span className="status-badge installed">{t('ai_cli.status_installed')}</span>
                                 ) : (
-                                    <span className="status-badge not-installed">Not Installed</span>
+                                    <span className="status-badge not-installed">{t('ai_cli.status_not_installed')}</span>
                                 )}
                             </div>
-                            <p className="tool-description">{tool.description}</p>
+                            <p className="tool-description">{getToolDescription(tool)}</p>
                             {tool.version && (
                                 <p className="tool-version">v{tool.version}</p>
                             )}
@@ -160,7 +171,7 @@ export function AiCliView() {
                                             {isOperating === `update-${tool.id}` ? (
                                                 <span className="spinner" style={{ width: 12, height: 12 }} />
                                             ) : (
-                                                'Update'
+                                                t('ai_cli.update')
                                             )}
                                         </button>
                                         <button
@@ -171,7 +182,7 @@ export function AiCliView() {
                                             {isOperating === `uninstall-${tool.id}` ? (
                                                 <span className="spinner" style={{ width: 12, height: 12 }} />
                                             ) : (
-                                                'Uninstall'
+                                                t('ai_cli.uninstall')
                                             )}
                                         </button>
                                     </>
@@ -184,8 +195,8 @@ export function AiCliView() {
                                         {isOperating === `install-${tool.id}` ? (
                                             <span className="spinner" style={{ width: 12, height: 12 }} />
                                         ) : (
-                                            'Install'
-                                        )}
+                                                t('ai_cli.install')
+                                            )}
                                     </button>
                                 )}
                                 <a
@@ -194,13 +205,13 @@ export function AiCliView() {
                                     rel="noopener noreferrer"
                                     className="btn btn-secondary btn-small"
                                 >
-                                    Docs
+                                    {t('ai_cli.docs')}
                                 </a>
                             </div>
 
                             {tool.config_paths && tool.config_paths.length > 0 && (
                                 <div className="config-section">
-                                    <h5>Config Files</h5>
+                                    <h5>{t('ai_cli.config_files')}</h5>
                                     <div className="config-list">
                                         {tool.config_paths.map((config, idx) => (
                                             <div key={idx} className={`config-item ${config.exists ? 'exists' : 'missing'}`}>
@@ -209,7 +220,7 @@ export function AiCliView() {
                                                     {config.path}
                                                 </span>
                                                 <span className={`config-status ${config.exists ? 'exists' : 'missing'}`}>
-                                                    {config.exists ? '✓' : '○'}
+                                                    {config.exists ? t('ai_cli.config_exists') : t('ai_cli.config_missing')}
                                                 </span>
                                             </div>
                                         ))}
@@ -223,7 +234,7 @@ export function AiCliView() {
 
             {tools.length === 0 && !isLoading && (
                 <div className="card empty-state">
-                    <p>Click Refresh to scan for AI CLI tools</p>
+                    <p>{t('ai_cli.empty')}</p>
                 </div>
             )}
 

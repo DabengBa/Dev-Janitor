@@ -39,13 +39,13 @@ export function SettingsView() {
                             className={`btn ${i18n.language === 'en' ? 'btn-primary' : 'btn-secondary'}`}
                             onClick={() => changeLanguage('en')}
                         >
-                            English
+                            {t('settings.language_en')}
                         </button>
                         <button
                             className={`btn ${i18n.language === 'zh' ? 'btn-primary' : 'btn-secondary'}`}
                             onClick={() => changeLanguage('zh')}
                         >
-                            中文
+                            {t('settings.language_zh')}
                         </button>
                     </div>
                 </div>

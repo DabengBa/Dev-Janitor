@@ -33,8 +33,8 @@ export function PackagesView() {
         setSuccess(null);
 
         try {
-            const result = await updatePackage(manager, name);
-            setSuccess(result);
+            await updatePackage(manager, name);
+            setSuccess(t('packages.success_update', { name }));
             await handleScan();
         } catch (e) {
             setError(String(e));
@@ -44,7 +44,7 @@ export function PackagesView() {
     };
 
     const handleUninstall = async (manager: string, name: string) => {
-        if (!confirm(t('packages.confirm_uninstall', { name }) || `Are you sure you want to uninstall ${name}?`)) {
+        if (!confirm(t('packages.confirm_uninstall', { name }))) {
             return;
         }
 
@@ -53,8 +53,8 @@ export function PackagesView() {
         setSuccess(null);
 
         try {
-            const result = await uninstallPackage(manager, name);
-            setSuccess(result);
+            await uninstallPackage(manager, name);
+            setSuccess(t('packages.success_uninstall', { name }));
             await handleScan();
         } catch (e) {
             setError(String(e));
@@ -83,12 +83,12 @@ export function PackagesView() {
     }, {} as Record<string, PackageInfo[]>);
 
     const managerDisplayNames: Record<string, string> = {
-        npm: 'npm',
-        pip: 'pip (Python)',
-        cargo: 'Cargo (Rust)',
-        composer: 'Composer (PHP)',
-        homebrew: 'Homebrew',
-        conda: 'Conda',
+        npm: t('packages.managers.npm'),
+        pip: t('packages.managers.pip'),
+        cargo: t('packages.managers.cargo'),
+        composer: t('packages.managers.composer'),
+        homebrew: t('packages.managers.homebrew'),
+        conda: t('packages.managers.conda'),
     };
 
     const outdatedCount = packages.filter(p => p.is_outdated).length;
@@ -100,10 +100,10 @@ export function PackagesView() {
                     <p className="text-secondary">{t('packages.description')}</p>
                     {packages.length > 0 && (
                         <p className="text-tertiary" style={{ marginTop: 4 }}>
-                            {packages.length} packages from {managers.length} managers
+                            {t('packages.summary', { packages: packages.length, managers: managers.length })}
                             {outdatedCount > 0 && (
                                 <span className="badge badge-warning" style={{ marginLeft: 8 }}>
-                                    {outdatedCount} outdated
+                                    {outdatedCount} {t('packages.outdated')}
                                 </span>
                             )}
                         </p>
@@ -129,7 +129,7 @@ export function PackagesView() {
                         value={filterManager}
                         onChange={(e) => setFilterManager(e.target.value)}
                     >
-                        <option value="all">All Managers</option>
+                        <option value="all">{t('packages.filter_all_managers')}</option>
                         {managers.map(m => (
                             <option key={m} value={m}>{managerDisplayNames[m] || m}</option>
                         ))}
@@ -140,7 +140,7 @@ export function PackagesView() {
                             checked={filterOutdated}
                             onChange={(e) => setFilterOutdated(e.target.checked)}
                         />
-                        Show outdated only
+                        {t('packages.filter_outdated_only')}
                     </label>
                 </div>
             )}
@@ -165,7 +165,7 @@ export function PackagesView() {
                             <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                             <line x1="12" y1="22.08" x2="12" y2="12" />
                         </svg>
-                        <p>No packages found. Click Refresh to scan.</p>
+                        <p>{t('packages.empty')}</p>
                         <button className="btn btn-secondary" onClick={handleScan}>
                             {t('packages.refresh')}
                         </button>
@@ -186,7 +186,7 @@ export function PackagesView() {
                                             <th style={{ width: '35%' }}>{t('packages.name')}</th>
                                             <th style={{ width: '15%' }}>{t('packages.version')}</th>
                                             <th style={{ width: '15%' }}>{t('packages.latest')}</th>
-                                            <th style={{ width: '15%' }}>Status</th>
+                                            <th style={{ width: '15%' }}>{t('packages.status')}</th>
                                             <th style={{ width: '20%' }}>{t('tools.actions')}</th>
                                         </tr>
                                     </thead>

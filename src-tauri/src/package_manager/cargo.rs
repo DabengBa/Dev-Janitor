@@ -2,7 +2,8 @@
 
 use super::{PackageInfo, PackageManager};
 use regex::Regex;
-use std::process::Command;
+
+use crate::utils::command::command_no_window;
 
 pub struct CargoManager {
     version: String,
@@ -86,14 +87,7 @@ impl PackageManager for CargoManager {
 }
 
 fn run_cargo_command(args: &[&str]) -> Option<String> {
-    #[cfg(target_os = "windows")]
-    let output = Command::new("cmd")
-        .args(["/C", &format!("cargo {}", args.join(" "))])
-        .output()
-        .ok()?;
-
-    #[cfg(not(target_os = "windows"))]
-    let output = Command::new("cargo").args(args).output().ok()?;
+    let output = command_no_window("cargo").args(args).output().ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
