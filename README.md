@@ -52,9 +52,7 @@ Developers love creating, but we hate the mess left behind. `node_modules`, `tar
 <div align="center">
   <img src="assets/headers/screenshot_clean.png" alt="Cleanup View" width="800"/>
   <p><em>Scan and clean gigabytes of junk with a single click</em></p>
-</div>
 
-*(Please place your own screenshots in `dev-janitor-v2/assets/headers/` renamed as `screenshot_dashboard.png` and `screenshot_clean.png`)*
 
 ## 📥 Installation
 
