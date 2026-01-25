@@ -1,6 +1,6 @@
 [package]
 name = "dev-janitor-v2"
-version = "2.0.4"
+version = "2.0.5"
 description = "Developer environment cleanup and management tool"
 authors = ["Dev Janitor Team"]
 edition = "2021"

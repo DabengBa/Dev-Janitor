@@ -5,6 +5,11 @@ All notable changes to Dev Janitor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2026-01-25
+
+### 修复
+- 修复 Linux 和 macOS 下 Clippy 报 `unused_mut` 警告导致 CI 失败的问题
+
 ## [2.0.4] - 2026-01-25
 
 ### 优化
