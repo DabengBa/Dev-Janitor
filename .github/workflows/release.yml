@@ -16,7 +16,8 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
+      release_id: ${{ steps.create-release.outputs.release_id }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
       
@@ -34,7 +35,8 @@ jobs:
               draft: true,
               prerelease: false
             })
-            return data.id
+            core.setOutput('release_id', data.id)
+            core.setOutput('upload_url', data.upload_url)
 
   build:
     needs: create-release
@@ -90,6 +92,58 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: --target ${{ matrix.target }}
+
+      # Create Windows Portable Version
+      - name: Create Portable ZIP (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $exePath = "src-tauri/target/x86_64-pc-windows-msvc/release/Dev Janitor.exe"
+          $portableDir = "portable"
+          $zipName = "Dev-Janitor_${version}_x64_portable.zip"
+          
+          # Create portable directory
+          New-Item -ItemType Directory -Force -Path $portableDir
+          
+          # Copy executable
+          Copy-Item $exePath -Destination $portableDir/
+          
+          # Create a portable marker file (prevents storing config in AppData)
+          New-Item -ItemType File -Path "$portableDir/.portable" -Force
+          
+          # Create README for portable version
+          @"
+          Dev Janitor v$version - Portable Edition
+          ==========================================
+          
+          Requirements:
+          - Windows 10/11
+          - Microsoft Edge WebView2 Runtime (usually pre-installed on Windows 10/11)
+          
+          Usage:
+          Simply run "Dev Janitor.exe" from this folder.
+          
+          Note: This portable version stores settings in the same directory.
+          "@ | Out-File -FilePath "$portableDir/README.txt" -Encoding UTF8
+          
+          # Create ZIP
+          Compress-Archive -Path "$portableDir/*" -DestinationPath $zipName -Force
+          
+          Write-Host "Created portable ZIP: $zipName"
+
+      - name: Upload Portable ZIP (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $zipFile = "Dev-Janitor_${version}_x64_portable.zip"
+          $tag = "${{ github.ref_name }}"
+          
+          # Upload using GitHub CLI
+          gh release upload $tag $zipFile --clobber
 
   publish-release:
     runs-on: ubuntu-latest

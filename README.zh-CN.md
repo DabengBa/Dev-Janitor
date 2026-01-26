@@ -73,7 +73,9 @@
 ## 📥 安装
 
 ### Windows
-从 [Releases](https://github.com/cocojojo5213/dev-janitor/releases) 页面下载最新的 `.msi` 安装包。
+从 [Releases](https://github.com/cocojojo5213/dev-janitor/releases) 页面下载：
+- **安装版**: `.msi` 安装包（推荐）
+- **便携版**: `*_portable.zip` 解压即用，无需安装
 
 ### MacOS
 从 [Releases](https://github.com/cocojojo5213/dev-janitor/releases) 下载 `.dmg` 文件。

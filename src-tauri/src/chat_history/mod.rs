@@ -378,10 +378,10 @@ pub fn delete_chat_file(path: &str) -> Result<String, String> {
             // Try with permission fix on Windows
             #[cfg(target_os = "windows")]
             {
-                if let Err(_) = fix_permissions_and_delete(&path_buf) {
+                if fix_permissions_and_delete(&path_buf).is_err() {
                     return Err(format!("Failed to delete {}: {}", path, e));
                 }
-                return Ok(format!("Deleted {} ({})", path, size_display));
+                Ok(format!("Deleted {} ({})", path, size_display))
             }
 
             #[cfg(not(target_os = "windows"))]
