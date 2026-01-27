@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useAppStore } from './store';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -27,7 +27,7 @@ function LoadingFallback() {
 function CurrentView() {
   const currentView = useAppStore((state) => state.currentView);
 
-  const viewComponents: Record<string, React.LazyExoticComponent<() => JSX.Element>> = {
+  const viewComponents: Record<string, React.LazyExoticComponent<() => React.ReactElement>> = {
     tools: ToolsView,
     packages: PackagesView,
     cache: CacheView,
