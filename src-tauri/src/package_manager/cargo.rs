@@ -3,7 +3,8 @@
 use super::{PackageInfo, PackageManager};
 use regex::Regex;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
+use std::time::Duration;
 
 pub struct CargoManager {
     version: String,
@@ -94,14 +95,14 @@ fn run_cargo_command(args: &[&str]) -> Option<String> {
             .chain(args.iter().copied())
             .collect::<Vec<_>>()
             .join(" ");
-        command_no_window("cmd")
-            .args(["/C", &cargo_args])
-            .output()
-            .ok()?
+        {
+            let cmd_args = ["/C", cargo_args.as_str()];
+            command_output_with_timeout("cmd", &cmd_args, Duration::from_secs(30)).ok()?
+        }
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = command_no_window("cargo").args(args).output().ok()?;
+    let output = command_output_with_timeout("cargo", args, Duration::from_secs(30)).ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();

@@ -4,7 +4,8 @@
 use serde::{Deserialize, Serialize};
 use sysinfo::{Pid, ProcessStatus, System};
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
+use std::time::Duration;
 
 /// Represents a running process
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -269,7 +270,7 @@ pub fn get_ports_in_use() -> Vec<PortInfo> {
 
 #[cfg(target_os = "windows")]
 fn get_ports_windows() -> Vec<PortInfo> {
-    let output = command_no_window("netstat").args(["-ano"]).output();
+    let output = command_output_with_timeout("netstat", &["-ano"], Duration::from_secs(5));
 
     let output = match output {
         Ok(o) => o,
@@ -330,13 +331,13 @@ fn get_ports_windows() -> Vec<PortInfo> {
 #[cfg(not(target_os = "windows"))]
 fn get_ports_unix() -> Vec<PortInfo> {
     // Try ss first, then lsof
-    let output = command_no_window("ss").args(["-tulpn"]).output();
+    let output = command_output_with_timeout("ss", &["-tulpn"], Duration::from_secs(5));
 
     let output = match output {
         Ok(o) if o.status.success() => o,
         _ => {
             // Try lsof
-            match command_no_window("lsof").args(["-i", "-P", "-n"]).output() {
+            match command_output_with_timeout("lsof", &["-i", "-P", "-n"], Duration::from_secs(5)) {
                 Ok(o) => o,
                 Err(_) => return Vec::new(),
             }

@@ -7,6 +7,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
+## [2.2.3] - 2026-01-28
+
+### 🛡️ Command Timeout Protection | 命令超时保护
+
+- Add timeout protection for external CLI commands to prevent UI freeze when a tool hangs.  
+  为外部 CLI 命令添加超时保护，避免某个工具卡住导致界面冻结。
+
+**Timeout Strategy | 超时策略:**
+
+| Scenario | Timeout | 场景 |
+|----------|---------|------|
+| Version detection | 6s | 版本探测 |
+| Package list | 30s | 包列表 |
+| Port scan | 5s | 端口扫描 |
+
+- If a command times out, it will be skipped and the scan continues.  
+  如果命令超时，该项会被跳过，扫描继续完成。
+
+**Files Changed | 变更文件:**
+- `command.rs` - New timeout command executor
+- `detection/mod.rs` - Tool scan with timeout
+- `ai_cli/mod.rs` - AI CLI version detection with timeout
+- `npm.rs`, `pip.rs`, `cargo.rs`, `composer.rs`, `conda.rs` - Package manager scan with timeout
+- `services/mod.rs` - Port scan with timeout
+
+---
+
 ## [2.2.2] - 2026-01-27
 
 ### 🛠 Fixes | 修复

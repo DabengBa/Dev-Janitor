@@ -3,7 +3,8 @@
 use super::{PackageInfo, PackageManager};
 use serde::Deserialize;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
+use std::time::Duration;
 
 pub struct NpmManager {
     version: String,
@@ -116,14 +117,14 @@ fn run_npm_command(args: &[&str]) -> Option<String> {
             .chain(args.iter().copied())
             .collect::<Vec<_>>()
             .join(" ");
-        command_no_window("cmd")
-            .args(["/C", &npm_args])
-            .output()
-            .ok()?
+        {
+            let cmd_args = ["/C", npm_args.as_str()];
+            command_output_with_timeout("cmd", &cmd_args, Duration::from_secs(30)).ok()?
+        }
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = command_no_window("npm").args(args).output().ok()?;
+    let output = command_output_with_timeout("npm", args, Duration::from_secs(30)).ok()?;
 
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).to_string())

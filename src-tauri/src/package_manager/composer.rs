@@ -3,7 +3,8 @@
 use super::{PackageInfo, PackageManager};
 use serde::Deserialize;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
+use std::time::Duration;
 
 pub struct ComposerManager {
     version: String,
@@ -93,7 +94,7 @@ impl PackageManager for ComposerManager {
 }
 
 fn run_composer_command(args: &[&str]) -> Option<String> {
-    let output = command_no_window("composer").args(args).output().ok()?;
+    let output = command_output_with_timeout("composer", args, Duration::from_secs(30)).ok()?;
 
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).to_string())

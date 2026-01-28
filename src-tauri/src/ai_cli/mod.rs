@@ -4,8 +4,9 @@
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
+use std::time::Duration;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::{command_no_window, command_output_with_timeout};
 
 /// Represents an AI CLI tool
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -329,14 +330,12 @@ fn run_command_get_version(cmd: &str, args: &[&str]) -> Option<String> {
     #[cfg(target_os = "windows")]
     let output = {
         let full_cmd = format!("{} {}", cmd, args.join(" "));
-        command_no_window("cmd")
-            .args(["/C", &full_cmd])
-            .output()
-            .ok()?
+        let cmd_args = ["/C", full_cmd.as_str()];
+        command_output_with_timeout("cmd", &cmd_args, Duration::from_secs(6)).ok()?
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = command_no_window(cmd).args(args).output().ok()?;
+    let output = command_output_with_timeout(cmd, args, Duration::from_secs(6)).ok()?;
 
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);

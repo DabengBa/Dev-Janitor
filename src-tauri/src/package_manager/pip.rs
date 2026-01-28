@@ -3,7 +3,8 @@
 use super::{PackageInfo, PackageManager};
 use serde::Deserialize;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
+use std::time::Duration;
 
 pub struct PipManager {
     version: String,
@@ -131,14 +132,14 @@ fn run_pip_command(pip_cmd: &str, args: &[&str]) -> Option<String> {
             .chain(args.iter().copied())
             .collect::<Vec<_>>()
             .join(" ");
-        command_no_window("cmd")
-            .args(["/C", &pip_args])
-            .output()
-            .ok()?
+        {
+            let cmd_args = ["/C", pip_args.as_str()];
+            command_output_with_timeout("cmd", &cmd_args, Duration::from_secs(30)).ok()?
+        }
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = command_no_window(pip_cmd).args(args).output().ok()?;
+    let output = command_output_with_timeout(pip_cmd, args, Duration::from_secs(30)).ok()?;
 
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).to_string())

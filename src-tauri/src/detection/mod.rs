@@ -5,8 +5,9 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
 
-use crate::utils::command::command_no_window;
+use crate::utils::command::command_output_with_timeout;
 
 /// Represents a detected tool version
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -356,7 +357,7 @@ fn get_tool_rules() -> Vec<ToolRule> {
 
 /// Execute a command and capture output
 fn execute_command(cmd: &str, args: &[&str]) -> Option<(String, String)> {
-    let output = command_no_window(cmd).args(args).output().ok()?;
+    let output = command_output_with_timeout(cmd, args, Duration::from_secs(6)).ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
