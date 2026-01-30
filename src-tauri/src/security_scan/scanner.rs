@@ -257,7 +257,7 @@ pub fn check_config_files(tool: &AiToolSecurityRule) -> Vec<SecurityFinding> {
 }
 
 fn collect_matching_files(
-    home: &PathBuf,
+    home: &Path,
     config_paths: &[String],
     path_pattern: &str,
 ) -> Vec<PathBuf> {
