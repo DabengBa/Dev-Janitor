@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
+## [2.2.6] - 2026-01-31
+
+### Fixes & Updates
+- Fix per-tool security scan invoke args (use toolId) to resolve "missing required key toolId" errors.
+
+---
+
 ## [2.2.5] - 2026-01-30
 
 ### Fixes & Updates | 修复与更新
