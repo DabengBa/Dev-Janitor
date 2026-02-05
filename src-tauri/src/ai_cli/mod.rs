@@ -34,9 +34,14 @@ pub struct AiConfigFile {
 /// Get all supported AI CLI tools with their status
 pub fn get_ai_cli_tools() -> Vec<AiCliTool> {
     let (claude_install_command, claude_uninstall_command) = if cfg!(target_os = "windows") {
+        // Get user profile path directly instead of relying on %USERPROFILE% expansion
+        let user_profile = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
         (
             "curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd".to_string(),
-            "del \"%USERPROFILE%\\.local\\bin\\claude.exe\" & rmdir /s /q \"%USERPROFILE%\\.local\\share\\claude\"".to_string(),
+            format!(
+                "del \"{}\\.local\\bin\\claude.exe\" & rmdir /s /q \"{}\\.local\\share\\claude\"",
+                user_profile, user_profile
+            ),
         )
     } else {
         (
