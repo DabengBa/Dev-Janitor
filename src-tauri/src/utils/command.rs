@@ -137,10 +137,12 @@ fn format_cmd_command_line(program: &str, args: &[&str]) -> String {
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_else(|| program.to_string());
 
-    std::iter::once(quote_cmd_arg(&resolved_program))
+    let command = std::iter::once(quote_cmd_arg(&resolved_program))
         .chain(args.iter().map(|arg| quote_cmd_arg(arg)))
         .collect::<Vec<_>>()
-        .join(" ")
+        .join(" ");
+
+    format!("\"{}\"", command)
 }
 
 #[cfg(target_os = "windows")]
@@ -223,7 +225,7 @@ mod tests {
 
         assert_eq!(
             formatted,
-            r#""C:\Program Files\nodejs\npm.cmd" install -g @openai/codex"#
+            r#"""C:\Program Files\nodejs\npm.cmd" install -g @openai/codex""#
         );
     }
 
