@@ -138,8 +138,7 @@ cargo test
 
 ## 📄 许可证
 
-**MIT License with Commons Clause** - 详见 [LICENSE](LICENSE)
-(本软件免费供个人和非商业用途使用，禁止商业销售。)
+**MIT License** - 详见 [LICENSE](LICENSE)
 
 ## 📧 联系
 

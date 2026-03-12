@@ -137,8 +137,7 @@ We welcome all contributions! Please read our [Contributing Guide](CONTRIBUTING.
 
 ## 📄 License
 
-**MIT License with Commons Clause** - See [LICENSE](LICENSE) for details.
-(This software is free for personal and non-commercial use. Commercial sale is prohibited.)
+**MIT License** - See [LICENSE](LICENSE) for details.
 
 ## 📧 Contact
 
