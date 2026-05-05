@@ -6,6 +6,11 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+#[cfg(target_os = "windows")]
+use winreg::{
+    enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ},
+    RegKey, HKEY,
+};
 
 /// Represents a PATH entry with analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,21 +87,27 @@ const DEV_PATH_PATTERNS: &[(&str, &str)] = &[
 
 /// Get the current PATH and analyze it
 pub fn analyze_path() -> Vec<PathEntry> {
-    let path_var = env::var("PATH").unwrap_or_default();
+    let path_var = get_path_var();
 
     #[cfg(target_os = "windows")]
     let separator = ';';
     #[cfg(not(target_os = "windows"))]
     let separator = ':';
 
+    analyze_path_var(&path_var, separator)
+}
+
+fn analyze_path_var(path_var: &str, separator: char) -> Vec<PathEntry> {
     let mut entries: Vec<PathEntry> = path_var
         .split(separator)
+        .map(str::trim)
         .filter(|p| !p.is_empty())
         .map(|p| {
-            let path = PathBuf::from(p);
+            let checked_path = expand_path_entry(p);
+            let path = PathBuf::from(&checked_path);
             let exists = path.exists();
 
-            let path_lower = p.to_lowercase();
+            let path_lower = format!("{} {}", p, checked_path).to_lowercase();
             let (is_dev_related, category) = DEV_PATH_PATTERNS
                 .iter()
                 .find(|(pattern, _)| path_lower.contains(pattern))
@@ -140,6 +151,96 @@ pub fn analyze_path() -> Vec<PathEntry> {
     }
 
     entries
+}
+
+#[cfg(target_os = "windows")]
+fn get_path_var() -> String {
+    get_persistent_windows_path().unwrap_or_else(|| env::var("PATH").unwrap_or_default())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_path_var() -> String {
+    env::var("PATH").unwrap_or_default()
+}
+
+#[cfg(target_os = "windows")]
+fn get_persistent_windows_path() -> Option<String> {
+    let machine_path = read_registry_path(
+        HKEY_LOCAL_MACHINE,
+        r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+    );
+    let user_path = read_registry_path(HKEY_CURRENT_USER, r"Environment");
+
+    let path = [machine_path, user_path]
+        .into_iter()
+        .flatten()
+        .filter(|path| !path.trim().is_empty())
+        .collect::<Vec<_>>()
+        .join(";");
+
+    if path.is_empty() {
+        None
+    } else {
+        Some(path)
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn read_registry_path(root: HKEY, subkey: &str) -> Option<String> {
+    let key = RegKey::predef(root)
+        .open_subkey_with_flags(subkey, KEY_READ)
+        .ok()?;
+
+    key.get_value("Path")
+        .or_else(|_| key.get_value("PATH"))
+        .ok()
+}
+
+fn expand_path_entry(path: &str) -> String {
+    let path = path.trim().trim_matches('"');
+
+    #[cfg(target_os = "windows")]
+    {
+        return expand_windows_env_vars(path);
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        path.to_string()
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn expand_windows_env_vars(path: &str) -> String {
+    let mut expanded = String::with_capacity(path.len());
+    let mut remainder = path;
+
+    while let Some(start) = remainder.find('%') {
+        expanded.push_str(&remainder[..start]);
+        let after_start = &remainder[start + 1..];
+
+        let Some(end) = after_start.find('%') else {
+            expanded.push('%');
+            expanded.push_str(after_start);
+            return expanded;
+        };
+
+        let name = &after_start[..end];
+        if name.is_empty() {
+            expanded.push_str("%%");
+        } else if let Ok(value) = env::var(name) {
+            expanded.push_str(&value);
+        } else {
+            expanded.push('%');
+            expanded.push_str(name);
+            expanded.push('%');
+        }
+
+        remainder = &after_start[end + 1..];
+    }
+
+    expanded.push_str(remainder);
+    expanded
 }
 
 /// Get shell configuration files
@@ -342,4 +443,81 @@ pub fn get_path_cleanup_suggestions(entries: &[PathEntry]) -> Vec<String> {
         .filter(|e| !e.issues.is_empty())
         .map(|e| format!("{}: {}", e.path, e.issues.join(", ")))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = env::temp_dir().join(format!("dev-janitor-config-{name}-{nanos}"));
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    #[test]
+    fn analyze_path_var_trims_entries_and_skips_empty_values() {
+        let dir = temp_dir("trim");
+        let path_var = format!(" ; {} ; ;", dir.display());
+
+        let entries = analyze_path_var(&path_var, ';');
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].path, dir.display().to_string());
+        assert!(entries[0].exists);
+
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn analyze_path_var_checks_quoted_path_existence() {
+        let dir = temp_dir("quoted");
+        let quoted = format!("\"{}\"", dir.display());
+
+        let entries = analyze_path_var(&quoted, ';');
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].path, quoted);
+        assert!(entries[0].exists);
+
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn analyze_path_var_marks_duplicate_entries() {
+        let dir = temp_dir("duplicate");
+        let path_var = format!("{};{}", dir.display(), dir.display());
+
+        let entries = analyze_path_var(&path_var, ';');
+
+        assert_eq!(entries.len(), 2);
+        assert!(entries[0].issues.is_empty());
+        assert!(entries[1]
+            .issues
+            .iter()
+            .any(|issue| issue.contains("Duplicate path")));
+
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn analyze_path_var_marks_missing_entries() {
+        let missing = env::temp_dir().join("dev-janitor-config-missing-entry");
+        let _ = fs::remove_dir_all(&missing);
+
+        let entries = analyze_path_var(&missing.display().to_string(), ';');
+
+        assert_eq!(entries.len(), 1);
+        assert!(!entries[0].exists);
+        assert!(entries[0]
+            .issues
+            .iter()
+            .any(|issue| issue == "Path does not exist"));
+    }
 }

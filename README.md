@@ -46,7 +46,7 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 
 - Inspect long-running development processes.
 - Find which process is using a specific port.
-- Review PATH and shell configuration issues.
+- Review PATH and shell configuration issues, including persisted Windows system/user PATH entries.
 
 ## Screenshots
 

@@ -7,6 +7,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
+## [2.3.7] - 2026-05-05
+
+### Windows PATH Diagnostics | Windows PATH 诊断
+
+- Read persisted Windows Machine/User `Path` values from the registry when diagnosing PATH entries, so deleted entries no longer reappear from the app process's stale startup environment.
+  Windows 诊断 PATH 时改为读取注册表中的系统/用户持久化 `Path`，避免已删除的条目继续从应用启动时继承的旧环境变量中显示。
+- Normalize PATH entries before checking existence: trim whitespace, handle quoted paths, and expand Windows `%VAR%` variables.
+  判断路径是否存在前先规范化 PATH 条目：去除空白、支持带引号路径，并展开 Windows `%VAR%` 环境变量。
+- Refresh same-major frontend dependencies for the patch release: Tauri JS packages, React/React DOM, and Zustand.
+  同步升级本补丁版本中的同主版本前端依赖：Tauri JS 包、React/React DOM 和 Zustand。
+- Validate with `pnpm lint`, `pnpm build`, `cargo fmt --check`, `cargo test`, `cargo clippy`, and `cargo check --target x86_64-pc-windows-gnu`.
+  使用 `pnpm lint`、`pnpm build`、`cargo fmt --check`、`cargo test`、`cargo clippy` 和 `cargo check --target x86_64-pc-windows-gnu` 完成验证。
+
+---
+
 ## [2.3.3] - 2026-03-07
 
 ### Release Fix | 发布修复
