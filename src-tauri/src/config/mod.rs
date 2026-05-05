@@ -201,7 +201,7 @@ fn expand_path_entry(path: &str) -> String {
 
     #[cfg(target_os = "windows")]
     {
-        return expand_windows_env_vars(path);
+        expand_windows_env_vars(path)
     }
 
     #[cfg(not(target_os = "windows"))]
