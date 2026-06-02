@@ -8,8 +8,6 @@ use std::time::Duration;
 
 use crate::ai_tools::{ai_tools, find_ai_tool, normalize_ai_tool_id, AiToolMetadata};
 use crate::utils::command::{command_output_with_timeout, command_output_with_timeout_vec};
-#[cfg(target_os = "windows")]
-use std::fs;
 
 /// Represents an AI CLI tool
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,27 +41,13 @@ struct ToolLifecycleCommands {
 fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
     match tool_id {
         "claude" => ToolLifecycleCommands {
-            install: if cfg!(target_os = "windows") {
-                "powershell -ExecutionPolicy ByPass -c \"irm https://claude.ai/install.ps1 | iex\""
-                    .to_string()
-            } else if cfg!(target_os = "macos") {
-                "brew install --cask claude-code".to_string()
-            } else {
-                "curl -fsSL https://claude.ai/install.sh | bash".to_string()
-            },
-            update: "claude update".to_string(),
-            uninstall: if cfg!(target_os = "windows") {
-                "Remove ~/.local/bin/claude.exe and ~/.local/share/claude (native install)"
-                    .to_string()
-            } else if cfg!(target_os = "macos") {
-                "brew uninstall --cask claude-code || (rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude)".to_string()
-            } else {
-                "rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude".to_string()
-            },
+            install: "npm install -g @anthropic-ai/claude-code".to_string(),
+            update: "npm install -g @anthropic-ai/claude-code@latest".to_string(),
+            uninstall: "npm uninstall -g @anthropic-ai/claude-code".to_string(),
         },
         "codex" => ToolLifecycleCommands {
             install: "npm i -g @openai/codex".to_string(),
-            update: "npm install -g @openai/codex@latest".to_string(),
+            update: "codex update || npm install -g @openai/codex@latest".to_string(),
             uninstall: "npm uninstall -g @openai/codex".to_string(),
         },
         "opencode" => ToolLifecycleCommands {
@@ -100,9 +84,10 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             uninstall: "npm uninstall -g @continuedev/cli".to_string(),
         },
         "cody" => ToolLifecycleCommands {
-            install: "npm install -g @sourcegraph/cody".to_string(),
-            update: "npm install -g @sourcegraph/cody@latest".to_string(),
-            uninstall: "npm uninstall -g @sourcegraph/cody".to_string(),
+            install: "npm install -g @sourcegraph/cody @sourcegraph/cody-agent".to_string(),
+            update: "npm install -g @sourcegraph/cody@latest @sourcegraph/cody-agent@latest"
+                .to_string(),
+            uninstall: "npm uninstall -g @sourcegraph/cody @sourcegraph/cody-agent".to_string(),
         },
         "cursor" => ToolLifecycleCommands {
             install: if cfg!(target_os = "windows") {
@@ -128,6 +113,31 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             install: "npm install -g @iflow-ai/iflow-cli".to_string(),
             update: "npm install -g @iflow-ai/iflow-cli@latest".to_string(),
             uninstall: "npm uninstall -g @iflow-ai/iflow-cli".to_string(),
+        },
+        "copilot" => ToolLifecycleCommands {
+            install: "npm install -g @github/copilot".to_string(),
+            update: "npm install -g @github/copilot@latest".to_string(),
+            uninstall: "npm uninstall -g @github/copilot".to_string(),
+        },
+        "qwen" => ToolLifecycleCommands {
+            install: "npm install -g @qwen-code/qwen-code".to_string(),
+            update: "npm install -g @qwen-code/qwen-code@latest".to_string(),
+            uninstall: "npm uninstall -g @qwen-code/qwen-code".to_string(),
+        },
+        "amp" => ToolLifecycleCommands {
+            install: "npm install -g @sourcegraph/amp".to_string(),
+            update: "npm install -g @sourcegraph/amp@latest".to_string(),
+            uninstall: "npm uninstall -g @sourcegraph/amp".to_string(),
+        },
+        "crush" => ToolLifecycleCommands {
+            install: "npm install -g @charmland/crush".to_string(),
+            update: "npm install -g @charmland/crush@latest".to_string(),
+            uninstall: "npm uninstall -g @charmland/crush".to_string(),
+        },
+        "amazonq" => ToolLifecycleCommands {
+            install: "Manual install from Amazon Q Developer CLI docs".to_string(),
+            update: "Manual update from Amazon Q Developer CLI docs".to_string(),
+            uninstall: "Manual uninstall from Amazon Q Developer CLI docs".to_string(),
         },
         _ => ToolLifecycleCommands {
             install: "Unsupported".to_string(),
@@ -283,6 +293,7 @@ fn is_manual_action(command: &str) -> bool {
         || normalized.starts_with("unsupported")
         || normalized.starts_with("visit")
         || normalized.starts_with("wsl required")
+        || normalized.starts_with("remove ")
 }
 
 /// Check if a tool is installed and get its version
@@ -306,10 +317,12 @@ fn version_probe_attempts(tool_id: &str) -> Vec<(&'static str, &'static [&'stati
         "cody" => vec![
             ("cody", &["--version"]),
             ("cody", &["help"]),
+            ("cody-agent", &["--version"]),
             ("cody-agent", &["help"]),
         ],
         "kiro" => vec![("kiro-cli", &["version"]), ("kiro", &["version"])],
         "iflow" => vec![("iflow", &["--version"])],
+        "amazonq" => vec![("q", &["--version"])],
         other => find_ai_tool(other)
             .map(|tool| {
                 tool.commands
@@ -412,6 +425,9 @@ mod tests {
         assert!(is_manual_action("Download from vendor site"));
         assert!(is_manual_action("Manual uninstall required"));
         assert!(is_manual_action("Unsupported on this platform"));
+        assert!(is_manual_action(
+            "Manual install from Amazon Q Developer CLI docs"
+        ));
         assert!(!is_manual_action("npm install -g @openai/codex"));
     }
 
@@ -422,6 +438,15 @@ mod tests {
 
         let kiro = lifecycle_commands("kiro");
         assert!(kiro.update.contains("kiro-cli update"));
+
+        let claude = lifecycle_commands("claude");
+        assert!(claude.install.contains("@anthropic-ai/claude-code"));
+
+        let cody = lifecycle_commands("cody");
+        assert!(cody.install.contains("@sourcegraph/cody-agent"));
+
+        let copilot = lifecycle_commands("copilot");
+        assert!(copilot.install.contains("@github/copilot"));
     }
 }
 
@@ -436,48 +461,27 @@ enum ToolAction {
 fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, String> {
     match (tool_id, action) {
         ("claude", ToolAction::Install) => {
-            #[cfg(target_os = "windows")]
-            {
-                run_owned_command(
-                    "powershell",
-                    &[
-                        "-ExecutionPolicy".to_string(),
-                        "ByPass".to_string(),
-                        "-c".to_string(),
-                        "irm https://claude.ai/install.ps1 | iex".to_string(),
-                    ],
-                )
-            }
-            #[cfg(target_os = "macos")]
-            {
-                run_command("brew", &["install", "--cask", "claude-code"])
-            }
-            #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
-            {
-                run_shell_command("curl -fsSL https://claude.ai/install.sh | bash")
-            }
+            run_command("npm", &["install", "-g", "@anthropic-ai/claude-code"])
         }
-        ("claude", ToolAction::Update) => run_command("claude", &["update"]),
+        ("claude", ToolAction::Update) => run_command(
+            "npm",
+            &["install", "-g", "@anthropic-ai/claude-code@latest"],
+        ),
         ("claude", ToolAction::Uninstall) => {
-            #[cfg(target_os = "windows")]
-            {
-                uninstall_claude_windows()
-            }
-            #[cfg(target_os = "macos")]
-            {
-                run_shell_command(
-                    "brew uninstall --cask claude-code || (rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude)",
-                )
-            }
-            #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
-            {
-                run_shell_command("rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude")
-            }
+            run_command("npm", &["uninstall", "-g", "@anthropic-ai/claude-code"])
         }
         ("codex", ToolAction::Install) => run_command("npm", &["i", "-g", "@openai/codex"]),
-        ("codex", ToolAction::Update) => {
-            run_command("npm", &["install", "-g", "@openai/codex@latest"])
-        }
+        ("codex", ToolAction::Update) => run_first_success(&[
+            ("codex", vec!["update".to_string()]),
+            (
+                "npm",
+                vec![
+                    "install".to_string(),
+                    "-g".to_string(),
+                    "@openai/codex@latest".to_string(),
+                ],
+            ),
+        ]),
         ("codex", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@openai/codex"])
         }
@@ -557,15 +561,33 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         ("continue", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@continuedev/cli"])
         }
-        ("cody", ToolAction::Install) => {
-            run_command("npm", &["install", "-g", "@sourcegraph/cody"])
-        }
-        ("cody", ToolAction::Update) => {
-            run_command("npm", &["install", "-g", "@sourcegraph/cody@latest"])
-        }
-        ("cody", ToolAction::Uninstall) => {
-            run_command("npm", &["uninstall", "-g", "@sourcegraph/cody"])
-        }
+        ("cody", ToolAction::Install) => run_command(
+            "npm",
+            &[
+                "install",
+                "-g",
+                "@sourcegraph/cody",
+                "@sourcegraph/cody-agent",
+            ],
+        ),
+        ("cody", ToolAction::Update) => run_command(
+            "npm",
+            &[
+                "install",
+                "-g",
+                "@sourcegraph/cody@latest",
+                "@sourcegraph/cody-agent@latest",
+            ],
+        ),
+        ("cody", ToolAction::Uninstall) => run_command(
+            "npm",
+            &[
+                "uninstall",
+                "-g",
+                "@sourcegraph/cody",
+                "@sourcegraph/cody-agent",
+            ],
+        ),
         ("kiro", ToolAction::Install) => {
             #[cfg(target_os = "windows")]
             {
@@ -630,6 +652,40 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         ("iflow", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@iflow-ai/iflow-cli"])
         }
+        ("copilot", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@github/copilot"])
+        }
+        ("copilot", ToolAction::Update) => {
+            run_command("npm", &["install", "-g", "@github/copilot@latest"])
+        }
+        ("copilot", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@github/copilot"])
+        }
+        ("qwen", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@qwen-code/qwen-code"])
+        }
+        ("qwen", ToolAction::Update) => {
+            run_command("npm", &["install", "-g", "@qwen-code/qwen-code@latest"])
+        }
+        ("qwen", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@qwen-code/qwen-code"])
+        }
+        ("amp", ToolAction::Install) => run_command("npm", &["install", "-g", "@sourcegraph/amp"]),
+        ("amp", ToolAction::Update) => {
+            run_command("npm", &["install", "-g", "@sourcegraph/amp@latest"])
+        }
+        ("amp", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@sourcegraph/amp"])
+        }
+        ("crush", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@charmland/crush"])
+        }
+        ("crush", ToolAction::Update) => {
+            run_command("npm", &["install", "-g", "@charmland/crush@latest"])
+        }
+        ("crush", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@charmland/crush"])
+        }
         _ => Err(format!("Unsupported action for tool: {}", tool_id)),
     }
 }
@@ -685,43 +741,4 @@ fn format_command_result(
     } else {
         Err(format!("Command failed:\n{}", combined))
     }
-}
-
-#[cfg(target_os = "windows")]
-fn uninstall_claude_windows() -> Result<String, String> {
-    let user_profile = env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
-    let home = PathBuf::from(user_profile);
-    let claude_binary = home.join(".local").join("bin").join("claude.exe");
-    let claude_share = home.join(".local").join("share").join("claude");
-    let claude_config = home.join(".claude");
-    let legacy_config = home.join(".claude.json");
-    let mut removed = Vec::new();
-
-    remove_path_if_exists(&claude_binary, &mut removed)?;
-    remove_path_if_exists(&claude_share, &mut removed)?;
-    remove_path_if_exists(&claude_config, &mut removed)?;
-    remove_path_if_exists(&legacy_config, &mut removed)?;
-
-    if removed.is_empty() {
-        Err("Claude Code 的默认安装目录未找到，无需卸载".to_string())
-    } else {
-        Ok(format!("Removed: {}", removed.join(", ")))
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn remove_path_if_exists(path: &PathBuf, removed: &mut Vec<String>) -> Result<(), String> {
-    if !path.exists() {
-        return Ok(());
-    }
-
-    let result = if path.is_dir() {
-        fs::remove_dir_all(path)
-    } else {
-        fs::remove_file(path)
-    };
-
-    result
-        .map(|_| removed.push(path.display().to_string()))
-        .map_err(|error| format!("Failed to remove {}: {}", path.display(), error))
 }

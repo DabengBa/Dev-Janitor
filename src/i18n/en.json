@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Dev Janitor",
-        "version": "v2.3.6"
+        "version": "v2.3.7"
     },
     "nav": {
         "tools": "Tools",
@@ -47,7 +47,7 @@
     },
     "packages": {
         "title": "Package Management",
-        "description": "Manage global packages from npm, pip, Cargo, etc.",
+        "description": "Manage global packages from npm, pnpm, Yarn, pip, Cargo, etc.",
         "refresh": "Refresh",
         "update": "Update",
         "uninstall": "Uninstall",
@@ -67,6 +67,8 @@
         "status": "Status",
         "managers": {
             "npm": "npm",
+            "pnpm": "pnpm",
+            "yarn": "Yarn",
             "pip": "pip (Python)",
             "cargo": "Cargo (Rust)",
             "composer": "Composer (PHP)",
@@ -378,6 +380,26 @@
             "iflow": {
                 "name": "iFlow CLI",
                 "description": "iFlow terminal AI assistant"
+            },
+            "copilot": {
+                "name": "GitHub Copilot CLI",
+                "description": "GitHub Copilot's standalone terminal assistant"
+            },
+            "qwen": {
+                "name": "Qwen Code",
+                "description": "Qwen's open-source terminal coding agent"
+            },
+            "amp": {
+                "name": "Amp",
+                "description": "Sourcegraph's agentic coding tool for the terminal"
+            },
+            "crush": {
+                "name": "Crush",
+                "description": "Charm's terminal AI coding agent"
+            },
+            "amazonq": {
+                "name": "Amazon Q Developer CLI",
+                "description": "AWS Amazon Q command-line coding assistant"
             }
         }
     },

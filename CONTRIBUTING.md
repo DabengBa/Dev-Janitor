@@ -22,8 +22,8 @@ pnpm tauri dev
 ## Toolchain
 
 - Node.js `24 LTS+`
-- pnpm `10.30.3+`
-- Rust `1.94.0`
+- pnpm `11.5.0+`
+- Rust `1.95.0`
 
 ## Validation
 
@@ -32,11 +32,15 @@ Run the relevant checks before opening a pull request:
 ```bash
 pnpm lint
 pnpm build
-cargo test
-cargo clippy -- -D warnings -A clippy::permissions_set_readonly_false -A dead_code -A unused_variables
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 ```
 
 If you change cross-platform command execution or Tauri backend behavior, also verify Windows behavior when possible.
+
+For release notes, tag history, and GitHub Actions history, see [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Pull Requests
 

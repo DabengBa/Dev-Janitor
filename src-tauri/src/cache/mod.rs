@@ -3,6 +3,7 @@
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -334,7 +335,7 @@ pub fn scan_project_caches(root_path: &str, max_depth: usize) -> Vec<CacheInfo> 
     }
 
     // Sort by size descending
-    caches.sort_by(|a, b| b.size.cmp(&a.size));
+    caches.sort_by_key(|cache| Reverse(cache.size));
     caches
 }
 

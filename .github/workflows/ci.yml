@@ -12,8 +12,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 24
-  PNPM_VERSION: 10.30.3
-  RUST_TOOLCHAIN: 1.94.0
+  PNPM_VERSION: 11.5.0
+  RUST_TOOLCHAIN: 1.95.0
 
 jobs:
   lint:
@@ -86,13 +86,17 @@ jobs:
       
       - name: Build frontend
         run: pnpm build
+
+      - name: Rust format check
+        run: cargo fmt --check
+        working-directory: src-tauri
       
       - name: Check Rust code
         run: cargo check
         working-directory: src-tauri
       
       - name: Clippy
-        run: cargo clippy -- -D warnings -A clippy::permissions_set_readonly_false -A dead_code -A unused_variables
+        run: cargo clippy --all-targets -- -D warnings
         working-directory: src-tauri
       
       - name: Build Tauri App

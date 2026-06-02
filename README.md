@@ -4,9 +4,9 @@
 
 <img src="assets/dev_janitor_banner_en.png" alt="Dev Janitor Banner" width="100%"/>
 
-[![Build Status](https://github.com/cocojojo5213/dev-janitor/workflows/CI/badge.svg)](https://github.com/cocojojo5213/dev-janitor/actions)
-[![Release](https://img.shields.io/github/v/release/cocojojo5213/dev-janitor)](https://github.com/cocojojo5213/dev-janitor/releases)
-[![Downloads](https://img.shields.io/github/downloads/cocojojo5213/dev-janitor/total)](https://github.com/cocojojo5213/dev-janitor/releases)
+[![Build Status](https://github.com/cocojojo5213/Dev-Janitor/workflows/CI/badge.svg)](https://github.com/cocojojo5213/Dev-Janitor/actions)
+[![Release](https://img.shields.io/github/v/release/cocojojo5213/Dev-Janitor)](https://github.com/cocojojo5213/Dev-Janitor/releases)
+[![Downloads](https://img.shields.io/github/downloads/cocojojo5213/Dev-Janitor/total)](https://github.com/cocojojo5213/Dev-Janitor/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
 Cross-platform desktop application for cleaning development artifacts, managing local developer tools, and checking common environment issues.
@@ -33,7 +33,7 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 
 - Inspect installed tools across Node, Python, Rust, Go, and related ecosystems.
 - Check versions and update common global packages.
-- Manage current AI CLI tools such as Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, and OpenCode from one interface.
+- Manage current AI CLI tools such as Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, GitHub Copilot CLI, Qwen Code, Amp, Crush, and Amazon Q Developer CLI from one interface.
 
 ### Security Scan
 
@@ -80,19 +80,19 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 
 ### Windows
 
-Download the latest files from [Releases](https://github.com/cocojojo5213/dev-janitor/releases):
+Download the latest files from [Releases](https://github.com/cocojojo5213/Dev-Janitor/releases):
 
 - Installer: `.msi`
 - Portable: `*_portable.zip`
 
 ### macOS
 
-Download the `.dmg` from [Releases](https://github.com/cocojojo5213/dev-janitor/releases).
+Download the `.dmg` from [Releases](https://github.com/cocojojo5213/Dev-Janitor/releases).
 The first launch may require `Right Click > Open` because of Gatekeeper.
 
 ### Linux
 
-AppImage, `.deb`, and `.rpm` packages are published on the [Releases](https://github.com/cocojojo5213/dev-janitor/releases) page.
+AppImage, `.deb`, and `.rpm` packages are published on the [Releases](https://github.com/cocojojo5213/Dev-Janitor/releases) page.
 
 ## Development
 
@@ -104,8 +104,8 @@ Dev Janitor is built with Tauri 2, React 19, and Rust.
 ### Prerequisites
 
 - Node.js 24 LTS+
-- pnpm 10.30.3+
-- Rust 1.94.0
+- pnpm 11.5.0+
+- Rust 1.95.0
 
 ### Setup
 
@@ -122,7 +122,10 @@ pnpm tauri dev
 ```bash
 pnpm lint
 pnpm build
-cargo test
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 ```
 
 </details>
@@ -139,6 +142,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 ## Project Docs
 
 - [Contributing Guide](CONTRIBUTING.md)
+- [Release and Build History](docs/RELEASES.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)
 - [Support](SUPPORT.md)

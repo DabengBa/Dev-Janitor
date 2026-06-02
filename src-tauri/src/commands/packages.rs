@@ -1,6 +1,6 @@
 //! Tauri commands for package management
 
-use crate::package_manager::{cargo, composer, conda, npm, pip};
+use crate::package_manager::{cargo, composer, conda, npm, pip, pnpm, yarn};
 use crate::package_manager::{scan_all_packages, PackageInfo, PackageManager};
 
 /// Scan all package managers for installed packages
@@ -18,6 +18,20 @@ pub fn update_package(manager: String, name: String) -> Result<String, String> {
                 m.update_package(&name)
             } else {
                 Err("npm is not available".to_string())
+            }
+        }
+        "pnpm" => {
+            if let Some(m) = pnpm::PnpmManager::new() {
+                m.update_package(&name)
+            } else {
+                Err("pnpm is not available".to_string())
+            }
+        }
+        "yarn" => {
+            if let Some(m) = yarn::YarnManager::new() {
+                m.update_package(&name)
+            } else {
+                Err("yarn is not available".to_string())
             }
         }
         "pip" => {
@@ -69,6 +83,20 @@ pub fn uninstall_package(manager: String, name: String) -> Result<String, String
                 m.uninstall_package(&name)
             } else {
                 Err("npm is not available".to_string())
+            }
+        }
+        "pnpm" => {
+            if let Some(m) = pnpm::PnpmManager::new() {
+                m.uninstall_package(&name)
+            } else {
+                Err("pnpm is not available".to_string())
+            }
+        }
+        "yarn" => {
+            if let Some(m) = yarn::YarnManager::new() {
+                m.uninstall_package(&name)
+            } else {
+                Err("yarn is not available".to_string())
             }
         }
         "pip" => {

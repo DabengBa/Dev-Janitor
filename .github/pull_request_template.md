@@ -7,8 +7,10 @@
 
 - [ ] `pnpm lint`
 - [ ] `pnpm build`
-- [ ] `cargo test`
-- [ ] `cargo clippy -- -D warnings -A clippy::permissions_set_readonly_false -A dead_code -A unused_variables`
+- [ ] `cargo fmt --check --manifest-path src-tauri/Cargo.toml`
+- [ ] `cargo test --manifest-path src-tauri/Cargo.toml`
+- [ ] `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
+- [ ] `cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu`
 
 ## Notes
 

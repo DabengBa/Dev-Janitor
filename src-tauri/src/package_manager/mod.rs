@@ -7,6 +7,8 @@ pub mod conda;
 pub mod homebrew;
 pub mod npm;
 pub mod pip;
+pub mod pnpm;
+pub mod yarn;
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -49,6 +51,14 @@ fn scan_npm_packages() -> Vec<PackageInfo> {
     npm::NpmManager::new().map_or_else(Vec::new, |manager| manager.list_packages())
 }
 
+fn scan_pnpm_packages() -> Vec<PackageInfo> {
+    pnpm::PnpmManager::new().map_or_else(Vec::new, |manager| manager.list_packages())
+}
+
+fn scan_yarn_packages() -> Vec<PackageInfo> {
+    yarn::YarnManager::new().map_or_else(Vec::new, |manager| manager.list_packages())
+}
+
 fn scan_pip_packages() -> Vec<PackageInfo> {
     pip::PipManager::new().map_or_else(Vec::new, |manager| manager.list_packages())
 }
@@ -71,8 +81,10 @@ fn scan_conda_packages() -> Vec<PackageInfo> {
 
 /// Scan all available package managers and list their packages
 pub fn scan_all_packages() -> Vec<PackageInfo> {
-    let package_scanners: [PackageScanFn; 6] = [
+    let package_scanners: [PackageScanFn; 8] = [
         scan_npm_packages,
+        scan_pnpm_packages,
+        scan_yarn_packages,
         scan_pip_packages,
         scan_cargo_packages,
         scan_composer_packages,

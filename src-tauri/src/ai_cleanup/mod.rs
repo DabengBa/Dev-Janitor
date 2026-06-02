@@ -3,6 +3,7 @@
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -37,6 +38,15 @@ const AI_TOOL_PATTERNS: &[(&str, &str)] = &[
     ("claude_output", "Claude output directory"),
     // Copilot
     (".copilot", "GitHub Copilot cache"),
+    (".config/github-copilot", "GitHub Copilot config"),
+    // Qwen Code
+    (".qwen/.cache", "Qwen Code cache"),
+    // Amp
+    (".amp/cache", "Amp cache"),
+    (".config/amp/cache", "Amp cache"),
+    // Crush
+    (".crush/cache", "Crush cache"),
+    (".config/crush/cache", "Crush cache"),
     // Codeium
     (".codeium", "Codeium AI cache"),
     // Tabnine
@@ -44,9 +54,11 @@ const AI_TOOL_PATTERNS: &[(&str, &str)] = &[
     // Windsurf
     (".windsurf", "Windsurf AI cache"),
     // Amazon Q / CodeWhisperer
-    (".aws/amazonq", "Amazon Q cache"),
-    (".aws/codewhisperer", "CodeWhisperer cache"),
-    (".amazonq", "Amazon Q Developer cache"),
+    (".amazonq/cache", "Amazon Q Developer cache"),
+    (".amazonq/history", "Amazon Q Developer history"),
+    (".aws/amazonq/cache", "Amazon Q cache"),
+    (".aws/amazonq/history", "Amazon Q history"),
+    (".aws/codewhisperer/cache", "CodeWhisperer cache"),
     // Generic AI patterns
     (".ai_cache", "Generic AI cache"),
     (".llm_cache", "LLM cache directory"),
@@ -162,16 +174,23 @@ fn check_ai_tool_pattern(path: &Path) -> Option<(&'static str, &'static str)> {
         .unwrap_or_default();
 
     for (pattern, reason) in AI_TOOL_PATTERNS {
-        if name == *pattern || name.starts_with(pattern) {
+        if !pattern.contains('/') && (name == *pattern || name.starts_with(pattern)) {
             return Some((pattern, reason));
         }
     }
 
-    // Check if in path
-    let path_str = path.to_string_lossy().to_lowercase();
+    // Check path-based patterns such as `.qwen/.cache` against both the
+    // directory itself and files below it.
+    let path_str = path.to_string_lossy().replace('\\', "/").to_lowercase();
     for (pattern, reason) in AI_TOOL_PATTERNS {
-        if path_str.contains(&format!("/{}/", pattern))
-            || path_str.contains(&format!("\\{}\\", pattern))
+        if !pattern.contains('/') {
+            continue;
+        }
+
+        let pattern_lower = pattern.to_ascii_lowercase();
+        if path_str == *pattern
+            || path_str.ends_with(&format!("/{pattern_lower}"))
+            || path_str.contains(&format!("/{pattern_lower}/"))
         {
             return Some((pattern, reason));
         }
@@ -417,7 +436,7 @@ pub fn scan_ai_junk(root_path: &str, max_depth: usize) -> Vec<AiJunkFile> {
     let mut junk_files: Vec<AiJunkFile> = by_path.into_values().collect();
 
     // Sort by size descending
-    junk_files.sort_by(|a, b| b.size.cmp(&a.size));
+    junk_files.sort_by_key(|file| Reverse(file.size));
 
     // Assign sequential IDs
     for (id_counter, file) in junk_files.iter_mut().enumerate() {
@@ -499,6 +518,55 @@ pub fn delete_ai_junk(path: &str) -> Result<String, String> {
     }
 }
 
+#[cfg(target_os = "windows")]
+#[allow(clippy::permissions_set_readonly_false)]
+fn fix_permissions_and_delete(path: &PathBuf) -> std::io::Result<()> {
+    use std::os::windows::fs::MetadataExt;
+
+    // Remove readonly attribute
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.file_attributes() & 1 != 0 {
+            let mut perms = metadata.permissions();
+            perms.set_readonly(false);
+            fs::set_permissions(path, perms)?;
+        }
+    }
+
+    if path.is_dir() {
+        // Recursively fix permissions
+        for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+            if let Ok(metadata) = fs::metadata(entry.path()) {
+                if metadata.file_attributes() & 1 != 0 {
+                    let mut perms = metadata.permissions();
+                    perms.set_readonly(false);
+                    let _ = fs::set_permissions(entry.path(), perms);
+                }
+            }
+        }
+        fs::remove_dir_all(path)
+    } else {
+        fs::remove_file(path)
+    }
+}
+
+#[cfg(unix)]
+fn chmod_and_delete(path: &PathBuf) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    // Set write permission
+    if let Ok(metadata) = fs::metadata(path) {
+        let mut perms = metadata.permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(path, perms)?;
+    }
+
+    if path.is_dir() {
+        fs::remove_dir_all(path)
+    } else {
+        fs::remove_file(path)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -577,53 +645,40 @@ mod tests {
 
         fs::remove_dir_all(project).unwrap();
     }
-}
 
-#[cfg(target_os = "windows")]
-#[allow(clippy::permissions_set_readonly_false)]
-fn fix_permissions_and_delete(path: &PathBuf) -> std::io::Result<()> {
-    use std::os::windows::fs::MetadataExt;
+    #[test]
+    fn ignores_new_active_ai_project_configs() {
+        let project = temp_project("new-configs");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".qwen")).unwrap();
+        fs::write(project.join(".qwen/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".amp")).unwrap();
+        fs::write(project.join(".amp/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".crush")).unwrap();
+        fs::write(project.join(".crush/config.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".amazonq")).unwrap();
+        fs::write(project.join(".amazonq/mcp.json"), "{}\n").unwrap();
 
-    // Remove readonly attribute
-    if let Ok(metadata) = fs::metadata(path) {
-        if metadata.file_attributes() & 1 != 0 {
-            let mut perms = metadata.permissions();
-            perms.set_readonly(false);
-            fs::set_permissions(path, perms)?;
-        }
-    }
+        let results = scan_ai_junk(project.to_str().unwrap(), 4);
+        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
 
-    if path.is_dir() {
-        // Recursively fix permissions
-        for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
-            if let Ok(metadata) = fs::metadata(entry.path()) {
-                if metadata.file_attributes() & 1 != 0 {
-                    let mut perms = metadata.permissions();
-                    perms.set_readonly(false);
-                    let _ = fs::set_permissions(entry.path(), perms);
-                }
-            }
-        }
-        fs::remove_dir_all(path)
-    } else {
-        fs::remove_file(path)
-    }
-}
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".qwen")),
+            ".qwen project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".amp")),
+            ".amp project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".crush")),
+            ".crush project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".amazonq")),
+            ".amazonq project settings should not be treated as AI junk"
+        );
 
-#[cfg(unix)]
-fn chmod_and_delete(path: &PathBuf) -> std::io::Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-
-    // Set write permission
-    if let Ok(metadata) = fs::metadata(path) {
-        let mut perms = metadata.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(path, perms)?;
-    }
-
-    if path.is_dir() {
-        fs::remove_dir_all(path)
-    } else {
-        fs::remove_file(path)
+        fs::remove_dir_all(project).unwrap();
     }
 }

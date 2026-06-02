@@ -5,7 +5,7 @@
   "author": "cocojojo5213",
   "license": "MIT",
   "version": "2.3.7",
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@11.5.0",
   "homepage": "https://github.com/cocojojo5213/Dev-Janitor",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
   },
   "engines": {
     "node": ">=24 <25",
-    "pnpm": ">=10.30.3"
+    "pnpm": ">=11.5.0"
   },
   "type": "module",
   "scripts": {
@@ -32,22 +32,22 @@
     "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@tauri-apps/api": "2.10.1",
-    "@tauri-apps/plugin-opener": "^2.5.3",
+    "@tauri-apps/api": "2.11.0",
+    "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
-    "i18next": "^25.8.14",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "react-i18next": "^16.5.6",
-    "zustand": "^5.0.13"
+    "i18next": "^26.3.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.8",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.10.1",
-    "@types/react": "^19.2.14",
+    "@tauri-apps/cli": "^2.11.2",
+    "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.6.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
   }
 }

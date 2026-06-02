@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "开发清道夫",
-        "version": "v2.3.6"
+        "version": "v2.3.7"
     },
     "nav": {
         "tools": "工具",
@@ -47,7 +47,7 @@
     },
     "packages": {
         "title": "依赖包管理",
-        "description": "管理 npm、pip、Cargo 等包管理器的全局包",
+        "description": "管理 npm、pnpm、Yarn、pip、Cargo 等包管理器的全局包",
         "refresh": "刷新",
         "update": "更新",
         "uninstall": "卸载",
@@ -67,6 +67,8 @@
         "status": "状态",
         "managers": {
             "npm": "npm",
+            "pnpm": "pnpm",
+            "yarn": "Yarn",
             "pip": "pip（Python）",
             "cargo": "Cargo（Rust）",
             "composer": "Composer（PHP）",
@@ -378,6 +380,26 @@
             "iflow": {
                 "name": "iFlow CLI",
                 "description": "iFlow 的终端 AI 助手"
+            },
+            "copilot": {
+                "name": "GitHub Copilot CLI",
+                "description": "GitHub Copilot 的独立终端助手"
+            },
+            "qwen": {
+                "name": "Qwen Code",
+                "description": "Qwen 的开源终端编程代理"
+            },
+            "amp": {
+                "name": "Amp",
+                "description": "Sourcegraph 的终端智能编程工具"
+            },
+            "crush": {
+                "name": "Crush",
+                "description": "Charm 的终端 AI 编程代理"
+            },
+            "amazonq": {
+                "name": "Amazon Q Developer CLI",
+                "description": "AWS Amazon Q 命令行编程助手"
             }
         }
     },

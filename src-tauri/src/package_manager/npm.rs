@@ -61,11 +61,10 @@ impl PackageManager for NpmManager {
             Err(_) => return packages,
         };
 
-        // Skip outdated check for now - it requires network and is slow
-        // TODO: Move to async background task
-        // let outdated_output = run_npm_command(&["outdated", "-g", "--json"]).unwrap_or_default();
+        let outdated_output = run_npm_command(&["outdated", "-g", "--json", "--long", "--depth=0"])
+            .unwrap_or_default();
         let outdated: std::collections::HashMap<String, NpmOutdatedPackage> =
-            std::collections::HashMap::new();
+            serde_json::from_str(&outdated_output).unwrap_or_default();
 
         if let Some(deps) = list.dependencies {
             for (name, pkg) in deps {

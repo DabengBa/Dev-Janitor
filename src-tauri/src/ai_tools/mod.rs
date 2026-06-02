@@ -19,7 +19,7 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         id: "claude",
         name: "Claude Code",
         description: "Anthropic's terminal coding agent",
-        docs_url: "https://code.claude.com/docs/en/setup",
+        docs_url: "https://docs.claude.com/en/docs/claude-code/setup",
         commands: &["claude"],
         version_args: &["--version"],
         version_regex: Some(r"(\d+\.\d+\.\d+)"),
@@ -49,12 +49,14 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         id: "opencode",
         name: "OpenCode",
         description: "Terminal-first coding agent with structured JSON config",
-        docs_url: "https://opencode.ai/docs/config/",
+        docs_url: "https://opencode.ai/docs",
         commands: &["opencode"],
         version_args: &["--version"],
         version_regex: Some(r"(\d+\.\d+\.\d+)"),
-        config_directories: &[".config/opencode"],
+        config_directories: &[".opencode", ".config/opencode"],
         config_files: &[
+            ".opencode/opencode.json",
+            ".opencode/opencode.jsonc",
             ".config/opencode/opencode.json",
             ".config/opencode/opencode.jsonc",
             ".config/opencode/tui.json",
@@ -119,11 +121,11 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         description: "Sourcegraph's coding assistant CLI",
         docs_url: "https://sourcegraph.com/docs/cody/clients/install-cli",
         commands: &["cody", "cody-agent"],
-        version_args: &["help"],
-        version_regex: Some(r"__dev_janitor_never_match__"),
-        config_directories: &[],
-        config_files: &[],
-        config_extensions: &[],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+)"),
+        config_directories: &[".sourcegraph", ".cody"],
+        config_files: &[".sourcegraph/cody.json", ".cody/config.json"],
+        config_extensions: &["json"],
     },
     AiToolMetadata {
         id: "cursor",
@@ -165,6 +167,66 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         config_files: &[".iflow/settings.json", ".iflow/IFLOW.md"],
         config_extensions: &["json"],
     },
+    AiToolMetadata {
+        id: "copilot",
+        name: "GitHub Copilot CLI",
+        description: "GitHub Copilot's standalone terminal assistant",
+        docs_url: "https://github.com/github/copilot-cli",
+        commands: &["copilot"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+)"),
+        config_directories: &[".copilot", ".config/github-copilot"],
+        config_files: &[".copilot/config.json"],
+        config_extensions: &["json"],
+    },
+    AiToolMetadata {
+        id: "qwen",
+        name: "Qwen Code",
+        description: "Qwen's open-source terminal coding agent",
+        docs_url: "https://github.com/QwenLM/qwen-code",
+        commands: &["qwen"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+)"),
+        config_directories: &[".qwen", ".config/qwen"],
+        config_files: &[".qwen/settings.json", ".qwen/QWEN.md"],
+        config_extensions: &["json", "toml", "yaml", "yml"],
+    },
+    AiToolMetadata {
+        id: "amp",
+        name: "Amp",
+        description: "Sourcegraph's agentic coding tool for the terminal",
+        docs_url: "https://ampcode.com/",
+        commands: &["amp"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".amp", ".config/amp"],
+        config_files: &[".amp/settings.json", ".config/amp/settings.json"],
+        config_extensions: &["json", "jsonc", "toml"],
+    },
+    AiToolMetadata {
+        id: "crush",
+        name: "Crush",
+        description: "Charm's terminal AI coding agent",
+        docs_url: "https://charm.sh/crush",
+        commands: &["crush"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+)"),
+        config_directories: &[".crush", ".config/crush"],
+        config_files: &[".crush/config.json", ".config/crush/config.json"],
+        config_extensions: &["json", "jsonc", "yaml", "yml"],
+    },
+    AiToolMetadata {
+        id: "amazonq",
+        name: "Amazon Q Developer CLI",
+        description: "AWS Amazon Q command-line coding assistant",
+        docs_url: "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html",
+        commands: &["q"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+)"),
+        config_directories: &[".amazonq", ".aws/amazonq"],
+        config_files: &[".amazonq/mcp.json", ".aws/amazonq/mcp.json"],
+        config_extensions: &["json", "toml", "yaml", "yml"],
+    },
 ];
 
 pub fn ai_tools() -> &'static [AiToolMetadata] {
@@ -188,6 +250,11 @@ pub fn normalize_ai_tool_id(id: &str) -> Option<&'static str> {
         "cursor" | "cursor_cli" => Some("cursor"),
         "kiro" | "kiro_cli" => Some("kiro"),
         "iflow" | "iflow_cli" => Some("iflow"),
+        "copilot" | "github_copilot" => Some("copilot"),
+        "qwen" | "qwen_code" => Some("qwen"),
+        "amp" | "sourcegraph_amp" => Some("amp"),
+        "crush" => Some("crush"),
+        "amazonq" | "amazon_q" | "q_cli" => Some("amazonq"),
         _ => None,
     }
 }
@@ -207,6 +274,11 @@ mod tests {
         assert!(ids.contains(&"claude"));
         assert!(ids.contains(&"kiro"));
         assert!(ids.contains(&"iflow"));
+        assert!(ids.contains(&"copilot"));
+        assert!(ids.contains(&"qwen"));
+        assert!(ids.contains(&"amp"));
+        assert!(ids.contains(&"crush"));
+        assert!(ids.contains(&"amazonq"));
     }
 
     #[test]
@@ -220,5 +292,8 @@ mod tests {
         assert_eq!(normalize_ai_tool_id("cursor_cli"), Some("cursor"));
         assert_eq!(normalize_ai_tool_id("continue_cli"), Some("continue"));
         assert_eq!(normalize_ai_tool_id("iflow_cli"), Some("iflow"));
+        assert_eq!(normalize_ai_tool_id("github_copilot"), Some("copilot"));
+        assert_eq!(normalize_ai_tool_id("qwen_code"), Some("qwen"));
+        assert_eq!(normalize_ai_tool_id("q_cli"), Some("amazonq"));
     }
 }

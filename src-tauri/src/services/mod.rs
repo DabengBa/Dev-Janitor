@@ -2,6 +2,7 @@
 //! Port scanning and process management using sysinfo
 
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use sysinfo::{Pid, ProcessStatus, System};
 
 use crate::utils::command::command_output_with_timeout;
@@ -102,6 +103,12 @@ const DEV_PROCESS_PATTERNS: &[(&str, &str)] = &[
     ("kiro-cli", "AI Tool"),
     ("iflow", "AI Tool"),
     ("cody", "AI Tool"),
+    ("cody-agent", "AI Tool"),
+    ("qwen", "AI Tool"),
+    ("amp", "AI Tool"),
+    ("crush", "AI Tool"),
+    ("amazonq", "AI Tool"),
+    ("amazon-q", "AI Tool"),
     // Version Control
     ("git", "Version Control"),
     ("gh", "Version Control"),
@@ -188,7 +195,7 @@ pub fn get_dev_processes() -> Vec<ProcessInfo> {
         .collect();
 
     // Sort by memory descending
-    processes.sort_by(|a, b| b.memory.cmp(&a.memory));
+    processes.sort_by_key(|process| Reverse(process.memory));
     processes
 }
 
@@ -233,7 +240,7 @@ pub fn get_all_processes() -> Vec<ProcessInfo> {
         .collect();
 
     // Sort by memory descending
-    processes.sort_by(|a, b| b.memory.cmp(&a.memory));
+    processes.sort_by_key(|process| Reverse(process.memory));
     processes
 }
 

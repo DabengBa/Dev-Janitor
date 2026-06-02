@@ -4,6 +4,7 @@
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -83,7 +84,26 @@ fn get_chat_history_patterns() -> Vec<ChatHistoryPattern> {
             tool: "GitHub Copilot",
             patterns: vec![
                 ".copilot", // Copilot cache
+                ".config/github-copilot",
             ],
+            file_type: "cache",
+        },
+        // Qwen Code
+        ChatHistoryPattern {
+            tool: "Qwen Code",
+            patterns: vec![".qwen/.cache", ".config/qwen/cache"],
+            file_type: "cache",
+        },
+        // Amp
+        ChatHistoryPattern {
+            tool: "Amp",
+            patterns: vec![".amp/cache", ".config/amp/cache"],
+            file_type: "cache",
+        },
+        // Crush
+        ChatHistoryPattern {
+            tool: "Crush",
+            patterns: vec![".crush/cache", ".config/crush/cache"],
             file_type: "cache",
         },
         // Codeium
@@ -106,7 +126,11 @@ fn get_chat_history_patterns() -> Vec<ChatHistoryPattern> {
         ChatHistoryPattern {
             tool: "Amazon Q",
             patterns: vec![
-                ".amazonq", // Amazon Q Developer cache
+                ".amazonq/cache",
+                ".amazonq/history",
+                ".aws/amazonq/cache",
+                ".aws/amazonq/history",
+                ".aws/codewhisperer/cache",
             ],
             file_type: "cache",
         },
@@ -169,16 +193,20 @@ fn get_size(path: &Path) -> u64 {
 /// Check if a path matches any AI tool chat history pattern
 fn check_chat_history_pattern(path: &Path) -> Option<(&'static str, &'static str, &'static str)> {
     let file_name = path.file_name()?.to_str()?;
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
 
     for pattern_group in get_chat_history_patterns() {
         for pattern in &pattern_group.patterns {
             // Check exact file name match
-            if file_name == *pattern {
+            if !pattern.contains('/') && file_name == *pattern {
                 return Some((pattern_group.tool, *pattern, pattern_group.file_type));
             }
-            // Check if pattern is in path (for nested patterns like .vscode/launch.json)
-            if pattern.contains('/') && path_str.replace('\\', "/").ends_with(pattern) {
+
+            // Check path-based patterns against both the directory/file itself
+            // and descendants below that directory.
+            if pattern.contains('/')
+                && (path_str.ends_with(pattern) || path_str.contains(&format!("{pattern}/")))
+            {
                 return Some((pattern_group.tool, *pattern, pattern_group.file_type));
             }
         }
@@ -369,7 +397,7 @@ pub fn scan_chat_history(root_path: &str, max_depth: usize) -> Vec<ProjectChatHi
 
     // Sort by total size (largest first)
     let mut sorted_results = results;
-    sorted_results.sort_by(|a, b| b.total_size.cmp(&a.total_size));
+    sorted_results.sort_by_key(|project| Reverse(project.total_size));
     sorted_results
 }
 
@@ -533,6 +561,9 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
         (".amazonq", "Amazon Q"),
         (".kiro", "Kiro CLI"),
         (".iflow", "iFlow CLI"),
+        (".qwen", "Qwen Code"),
+        (".amp", "Amp"),
+        (".crush", "Crush"),
     ];
 
     for (dir_name, tool) in &global_patterns {
@@ -555,7 +586,7 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
     }
 
     // Sort by size
-    global_files.sort_by(|a, b| b.size.cmp(&a.size));
+    global_files.sort_by_key(|file| Reverse(file.size));
     global_files
 }
 
@@ -606,6 +637,28 @@ mod tests {
         fs::write(project.join(".opencode/commands/fix.md"), "# command\n").unwrap();
         fs::create_dir_all(project.join(".gemini")).unwrap();
         fs::write(project.join(".gemini/settings.json"), "{}\n").unwrap();
+
+        let results = scan_chat_history(project.to_str().unwrap(), 4);
+        assert!(
+            results.is_empty(),
+            "active AI project configuration should not be treated as chat history"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn ignores_new_active_ai_project_configs() {
+        let project = temp_project("new-configs");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".qwen")).unwrap();
+        fs::write(project.join(".qwen/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".amp")).unwrap();
+        fs::write(project.join(".amp/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".crush")).unwrap();
+        fs::write(project.join(".crush/config.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".amazonq")).unwrap();
+        fs::write(project.join(".amazonq/mcp.json"), "{}\n").unwrap();
 
         let results = scan_chat_history(project.to_str().unwrap(), 4);
         assert!(

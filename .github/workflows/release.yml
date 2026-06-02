@@ -5,15 +5,25 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing tag to build, for example v2.3.7'
+        required: true
+        type: string
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 24
-  PNPM_VERSION: 10.30.3
-  RUST_TOOLCHAIN: 1.94.0
+  PNPM_VERSION: 11.5.0
+  RUST_TOOLCHAIN: 1.95.0
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 jobs:
   create-release:
@@ -23,17 +33,41 @@ jobs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       
       - name: Create Release
         id: create-release
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const tag = process.env.RELEASE_TAG
+            if (!/^v[0-9]/.test(tag)) {
+              core.setFailed(`Release tag must start with v plus a version number, got: ${tag}`)
+              return
+            }
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            })
+            const existing = releases.find((release) => release.tag_name === tag && release.draft)
+              || releases.find((release) => release.tag_name === tag)
+            if (existing) {
+              core.info(`Reusing existing release ${existing.id} for ${tag}`)
+              core.setOutput('release_id', existing.id)
+              core.setOutput('upload_url', existing.upload_url)
+              return
+            }
+
             const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `${context.ref.replace('refs/tags/', '')}`,
-              name: `Dev Janitor ${context.ref.replace('refs/tags/', '')}`,
+              owner,
+              repo,
+              tag_name: tag,
+              name: `Dev Janitor ${tag}`,
               draft: true,
               prerelease: false,
               generate_release_notes: true
@@ -60,6 +94,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
@@ -100,7 +136,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ env.RELEASE_TAG }}
           includeUpdaterJson: true
           args: --target ${{ matrix.target }}
 

@@ -277,13 +277,13 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         },
 
         // =====================================
-        // Claude Code (claude-code) - Anthropic official CLI
+        // Claude Code - Anthropic official CLI
         // =====================================
         AiToolSecurityRule {
-            id: "claude-code".into(),
+            id: "claude".into(),
             name: "Claude Code".into(),
             description: "Anthropic's official AI coding CLI".into(),
-            docs_url: "https://code.claude.com/docs/en/setup".into(),
+            docs_url: "https://docs.claude.com/en/docs/claude-code/setup".into(),
             process_names: vec!["claude".into(), "claude-code".into()],
             ports: vec![
                 PortRule {
@@ -294,9 +294,19 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
                     safe_bindings: vec!["127.0.0.1".into()],
                 },
             ],
-            configs: vec![],
+            configs: vec![ConfigRule {
+                name: "API Keys in Claude Config".into(),
+                description: "API keys or tokens stored in Claude Code config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-ant-|sk-|api_key|apiKey|access_token".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use provider environment variables or the tool's secure login flow instead of plaintext config values".into(),
+            }],
             config_paths: vec![
                 ".claude/".into(),
+                ".claude.json".into(),
             ],
         },
 
@@ -304,7 +314,7 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         // Codex CLI - OpenAI
         // =====================================
         AiToolSecurityRule {
-            id: "codex-cli".into(),
+            id: "codex".into(),
             name: "Codex CLI".into(),
             description: "OpenAI's Codex command-line tool".into(),
             docs_url: "https://developers.openai.com/codex/cli".into(),
@@ -463,7 +473,7 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         // Gemini CLI - Google AI
         // =====================================
         AiToolSecurityRule {
-            id: "gemini-cli".into(),
+            id: "gemini".into(),
             name: "Gemini CLI".into(),
             description: "Google's Gemini AI coding assistant".into(),
             docs_url: "https://google-gemini.github.io/gemini-cli/".into(),
@@ -486,6 +496,144 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
                 ".gemini/settings.json".into(),
             ],
         },
+
+        // =====================================
+        // GitHub Copilot CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "copilot".into(),
+            name: "GitHub Copilot CLI".into(),
+            description: "GitHub Copilot standalone terminal assistant".into(),
+            docs_url: "https://github.com/github/copilot-cli".into(),
+            process_names: vec!["copilot".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "GitHub Token in Config".into(),
+                description: "GitHub tokens or API keys stored in Copilot config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "ghp_|github_pat_|sk-|api_key|apiKey|access_token".into(),
+                },
+                risk_level: RiskLevel::High,
+                remediation: "Use GitHub's authentication flow or environment-backed secrets instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".copilot/".into(),
+                ".config/github-copilot/".into(),
+            ],
+        },
+
+        // =====================================
+        // Qwen Code
+        // =====================================
+        AiToolSecurityRule {
+            id: "qwen".into(),
+            name: "Qwen Code".into(),
+            description: "Qwen terminal coding agent".into(),
+            docs_url: "https://github.com/QwenLM/qwen-code".into(),
+            process_names: vec!["qwen".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Qwen Config".into(),
+                description: "Provider API keys stored in Qwen Code config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "DASHSCOPE_API_KEY|OPENAI_API_KEY|sk-|api_key|apiKey".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Keep provider keys in environment variables or secret storage, not committed config files".into(),
+            }],
+            config_paths: vec![
+                ".qwen/".into(),
+                ".config/qwen/".into(),
+            ],
+        },
+
+        // =====================================
+        // Amp
+        // =====================================
+        AiToolSecurityRule {
+            id: "amp".into(),
+            name: "Amp".into(),
+            description: "Sourcegraph's agentic coding tool for the terminal".into(),
+            docs_url: "https://ampcode.com/".into(),
+            process_names: vec!["amp".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Token in Amp Config".into(),
+                description: "Access tokens or provider keys stored in Amp config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-|api_key|apiKey|access_token|refresh_token".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use the tool's login flow or secret-backed environment variables instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".amp/".into(),
+                ".config/amp/".into(),
+            ],
+        },
+
+        // =====================================
+        // Crush
+        // =====================================
+        AiToolSecurityRule {
+            id: "crush".into(),
+            name: "Crush".into(),
+            description: "Charm's terminal AI coding agent".into(),
+            docs_url: "https://charm.sh/crush".into(),
+            process_names: vec!["crush".into()],
+            ports: vec![
+                PortRule {
+                    port: 43557,
+                    name: "Crush Local Server".into(),
+                    description: "Local helper/API server should only bind to localhost".into(),
+                    risk_if_exposed: RiskLevel::Medium,
+                    safe_bindings: vec!["127.0.0.1".into(), "localhost".into(), "::1".into()],
+                },
+            ],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Crush Config".into(),
+                description: "Provider API keys stored in Crush config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-|api_key|apiKey|access_token|ANTHROPIC_API_KEY|OPENAI_API_KEY".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Keep provider keys in environment variables or secret storage instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".crush/".into(),
+                ".config/crush/".into(),
+            ],
+        },
+
+        // =====================================
+        // Amazon Q Developer CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "amazonq".into(),
+            name: "Amazon Q Developer CLI".into(),
+            description: "AWS Amazon Q command-line coding assistant".into(),
+            docs_url: "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html".into(),
+            process_names: vec!["q".into(), "amazon-q".into(), "amazonq".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "AWS Credentials in Amazon Q Config".into(),
+                description: "AWS access keys or session tokens stored in Amazon Q config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "AKIA|ASIA|aws_access_key_id|aws_secret_access_key|aws_session_token".into(),
+                },
+                risk_level: RiskLevel::High,
+                remediation: "Use AWS SSO, profiles, or the AWS credential chain instead of plaintext secrets in tool config files".into(),
+            }],
+            config_paths: vec![
+                ".amazonq/".into(),
+                ".aws/amazonq/".into(),
+            ],
+        },
     ]
 }
 
@@ -499,4 +647,25 @@ pub fn ai_tool_security_rules() -> &'static Vec<AiToolSecurityRule> {
 /// Get the actual rules
 pub fn get_rules() -> &'static Vec<AiToolSecurityRule> {
     ai_tool_security_rules()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn security_rule_ids_match_ai_cli_ids() {
+        let ids: Vec<_> = get_ai_tool_rules()
+            .into_iter()
+            .map(|rule| rule.id)
+            .collect();
+        for id in [
+            "claude", "codex", "gemini", "copilot", "qwen", "amp", "crush", "amazonq",
+        ] {
+            assert!(
+                ids.contains(&id.to_string()),
+                "missing security rule for {id}"
+            );
+        }
+    }
 }
