@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Dev Janitor",
-        "version": "v2.3.7"
+        "version": "v2.4.0"
     },
     "nav": {
         "tools": "Tools",

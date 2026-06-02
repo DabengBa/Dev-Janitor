@@ -7,7 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
-## Unreleased
+## [2.4.0] - 2026-06-02
 
 ### AI CLI Refresh | AI CLI 刷新
 
@@ -19,8 +19,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
   将 AI 安全扫描规则 ID 与 AI CLI ID 对齐，并新增针对明文提供商密钥、GitHub token、AWS 凭证和本地辅助端口暴露的保守检查。
 - Add pnpm and Yarn global package manager support, restore bounded npm outdated checks, and update the project toolchain/dependencies to pnpm 11.5, Rust 1.95, Tauri 2.11, Vite 8, TypeScript 6, React 19.2, and i18next 26.
   新增 pnpm 与 Yarn 全局包管理支持，恢复有超时保护的 npm outdated 检查，并将项目工具链和依赖更新到 pnpm 11.5、Rust 1.95、Tauri 2.11、Vite 8、TypeScript 6、React 19.2 和 i18next 26。
-- Fix the in-app localized version label from `v2.3.6` to `v2.3.7`.
-  修正应用内本地化版本显示，从 `v2.3.6` 改为 `v2.3.7`。
+- Set the app, bundle, crate, and localized display versions to `v2.4.0` for this release.
+  将应用、安装包、Rust crate 和本地化显示版本同步为本次发布的 `v2.4.0`。
 
 ---
 
