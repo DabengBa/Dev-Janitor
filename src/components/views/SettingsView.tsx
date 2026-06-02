@@ -4,7 +4,7 @@ import { changeLanguage } from '../../i18n';
 
 export function SettingsView() {
     const { t, i18n } = useTranslation();
-    const { theme, setTheme, aiEndpoint, setAiEndpoint } = useAppStore();
+    const { theme, setTheme } = useAppStore();
 
     const themes: { value: Theme; label: string }[] = [
         { value: 'light', label: t('settings.theme_light') },
@@ -48,19 +48,6 @@ export function SettingsView() {
                             {t('settings.language_zh')}
                         </button>
                     </div>
-                </div>
-
-                {/* AI Endpoint */}
-                <div className="setting-item">
-                    <label className="setting-label" htmlFor="ai-endpoint-input">{t('settings.ai_endpoint')}</label>
-                    <input
-                        id="ai-endpoint-input"
-                        type="text"
-                        className="setting-input"
-                        placeholder={t('settings.ai_endpoint_placeholder')}
-                        value={aiEndpoint}
-                        onChange={(e) => setAiEndpoint(e.target.value)}
-                    />
                 </div>
             </div>
         </div>

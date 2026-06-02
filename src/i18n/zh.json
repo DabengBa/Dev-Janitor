@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "开发清道夫",
-        "version": "v2.4.0"
+        "version": "v2.4.1"
     },
     "nav": {
         "tools": "工具",
@@ -165,6 +165,8 @@
             "tabnine_cache": "Tabnine 缓存",
             "codex_cache": "OpenAI Codex 缓存",
             "continue_cache": "Continue 缓存",
+            "cline_cache": "Cline 缓存",
+            "cline_history": "Cline 历史记录",
             "amazonq_cache": "Amazon Q 缓存",
             "codewhisperer_cache": "CodeWhisperer 缓存",
             "windows_nul": "Windows NUL 文件（常由 AI 工具生成）",
@@ -389,6 +391,10 @@
                 "name": "Qwen Code",
                 "description": "Qwen 的开源终端编程代理"
             },
+            "cline": {
+                "name": "Cline CLI",
+                "description": "Cline 的自主编程代理命令行工具"
+            },
             "amp": {
                 "name": "Amp",
                 "description": "Sourcegraph 的终端智能编程工具"
@@ -434,9 +440,7 @@
         "theme_system": "跟随系统",
         "language": "语言",
         "language_en": "英文",
-        "language_zh": "简体中文",
-        "ai_endpoint": "自定义 AI 端点",
-        "ai_endpoint_placeholder": "https://api.openai.com/v1"
+        "language_zh": "简体中文"
     },
     "updater": {
         "available": "发现新版本 {{version}}，现在安装吗？",

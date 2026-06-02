@@ -6,54 +6,6 @@ import { persist } from 'zustand/middleware';
 export type Theme = 'light' | 'dark' | 'system';
 export type NavView = 'tools' | 'packages' | 'cache' | 'ai_cleanup' | 'chat_history' | 'services' | 'security_scan' | 'config' | 'ai_cli' | 'settings';
 
-export interface ToolInfo {
-    id: string;
-    name: string;
-    versions: ToolVersion[];
-    path: string;
-    status: 'installed' | 'not_in_path' | 'multiple_versions';
-}
-
-export interface ToolVersion {
-    version: string;
-    path: string;
-    isActive: boolean;
-}
-
-export interface PackageInfo {
-    name: string;
-    version: string;
-    latest?: string;
-    manager: string;
-    isOutdated: boolean;
-}
-
-export interface CacheInfo {
-    manager: string;
-    path: string;
-    size: number;
-}
-
-export interface JunkFile {
-    path: string;
-    name: string;
-    size: number;
-    reason: string;
-}
-
-export interface PortInfo {
-    port: number;
-    pid: number;
-    process: string;
-}
-
-export interface AiCliTool {
-    id: string;
-    name: string;
-    installed: boolean;
-    version?: string;
-}
-
 // ============ App Store ============
 
 export interface AiJunkFileStore {
@@ -74,38 +26,6 @@ interface AppState {
     // Theme
     theme: Theme;
     setTheme: (theme: Theme) => void;
-
-    // Settings
-    aiEndpoint: string;
-    setAiEndpoint: (endpoint: string) => void;
-
-    // Loading states
-    isScanning: boolean;
-    setIsScanning: (scanning: boolean) => void;
-
-    // Tools data
-    tools: ToolInfo[];
-    setTools: (tools: ToolInfo[]) => void;
-
-    // Packages data
-    packages: PackageInfo[];
-    setPackages: (packages: PackageInfo[]) => void;
-
-    // Caches data
-    caches: CacheInfo[];
-    setCaches: (caches: CacheInfo[]) => void;
-
-    // AI Junk files
-    junkFiles: JunkFile[];
-    setJunkFiles: (files: JunkFile[]) => void;
-
-    // Services
-    ports: PortInfo[];
-    setPorts: (ports: PortInfo[]) => void;
-
-    // AI CLI Tools
-    aiCliTools: AiCliTool[];
-    setAiCliTools: (tools: AiCliTool[]) => void;
 
     // AI Cleanup View State (persisted across page switches)
     aiCleanupJunkFiles: AiJunkFileStore[];
@@ -220,28 +140,6 @@ export const useAppStore = create<AppState>()(
                 applyTheme(theme);
             },
 
-            // Settings
-            aiEndpoint: '',
-            setAiEndpoint: (endpoint: string) => set({ aiEndpoint: endpoint }),
-
-            // Loading
-            isScanning: false,
-            setIsScanning: (scanning: boolean) => set({ isScanning: scanning }),
-
-            // Data
-            tools: [],
-            setTools: (tools: ToolInfo[]) => set({ tools }),
-            packages: [],
-            setPackages: (packages: PackageInfo[]) => set({ packages }),
-            caches: [],
-            setCaches: (caches: CacheInfo[]) => set({ caches }),
-            junkFiles: [],
-            setJunkFiles: (files: JunkFile[]) => set({ junkFiles: files }),
-            ports: [],
-            setPorts: (ports: PortInfo[]) => set({ ports }),
-            aiCliTools: [],
-            setAiCliTools: (tools: AiCliTool[]) => set({ aiCliTools: tools }),
-
             // AI Cleanup View State
             aiCleanupJunkFiles: [],
             setAiCleanupJunkFiles: (files: AiJunkFileStore[]) => set({ aiCleanupJunkFiles: files }),
@@ -288,7 +186,6 @@ export const useAppStore = create<AppState>()(
             name: 'dev-janitor-storage',
             partialize: (state: AppState) => ({
                 theme: state.theme,
-                aiEndpoint: state.aiEndpoint,
             }),
         }
     )

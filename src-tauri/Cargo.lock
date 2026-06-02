@@ -735,7 +735,7 @@ dependencies = [
 
 [[package]]
 name = "dev-janitor-v2"
-version = "2.4.0"
+version = "2.4.1"
 dependencies = [
  "chrono",
  "glob",

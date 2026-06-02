@@ -33,7 +33,7 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 
 - Inspect installed tools across Node, Python, Rust, Go, and related ecosystems.
 - Check versions and update common global packages.
-- Manage current AI CLI tools such as Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, GitHub Copilot CLI, Qwen Code, Amp, Crush, and Amazon Q Developer CLI from one interface.
+- Manage current AI CLI tools such as Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, GitHub Copilot CLI, Qwen Code, Cline, Amp, Crush, and Amazon Q Developer CLI from one interface.
 
 ### Security Scan
 

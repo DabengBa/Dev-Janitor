@@ -118,6 +118,45 @@ export async function deleteMultipleAiJunk(paths: string[]): Promise<Array<{ Ok?
     return safeInvoke<Array<{ Ok?: string; Err?: string }>>('delete_multiple_ai_junk', { paths });
 }
 
+// ============ AI Chat History ============
+
+export interface ChatHistoryFile {
+    id: string;
+    name: string;
+    path: string;
+    size: number;
+    size_display: string;
+    ai_tool: string;
+    file_type: string;
+    is_directory: boolean;
+}
+
+export interface ProjectChatHistory {
+    id: string;
+    name: string;
+    project_path: string;
+    chat_files: ChatHistoryFile[];
+    total_size: number;
+    total_size_display: string;
+    ai_tools_detected: string[];
+}
+
+export async function scanChatHistory(path: string, maxDepth: number): Promise<ProjectChatHistory[]> {
+    return safeInvoke<ProjectChatHistory[]>('scan_chat_history_cmd', { path, maxDepth });
+}
+
+export async function scanGlobalChatHistory(): Promise<ChatHistoryFile[]> {
+    return safeInvoke<ChatHistoryFile[]>('scan_global_chat_history_cmd');
+}
+
+export async function deleteChatFile(path: string): Promise<string> {
+    return safeInvoke<string>('delete_chat_file_cmd', { path });
+}
+
+export async function deleteMultipleChatFiles(paths: string[]): Promise<[number, number, string[]]> {
+    return safeInvoke<[number, number, string[]]>('delete_multiple_chat_files', { paths });
+}
+
 // ============ Service Monitoring ============
 
 export interface ProcessInfo {

@@ -8,7 +8,7 @@ This document records the repository release line, GitHub tag state, and Actions
 - Published at: `2026-05-05T05:56:40Z`
 - Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.3.7
 - Published asset count: 22
-- Current app version in this checkout: `2.4.0`
+- Current app version in this checkout: `2.4.1`
 - Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
 
 The repository also has historical draft releases left by failed or repeated release runs. These drafts are not published artifacts. Before publishing a new release, review and delete stale drafts in GitHub Releases if they are no longer useful for debugging.

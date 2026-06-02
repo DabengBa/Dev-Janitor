@@ -94,6 +94,17 @@ fn get_chat_history_patterns() -> Vec<ChatHistoryPattern> {
             patterns: vec![".qwen/.cache", ".config/qwen/cache"],
             file_type: "cache",
         },
+        // Cline
+        ChatHistoryPattern {
+            tool: "Cline",
+            patterns: vec![
+                ".cline/cache",
+                ".cline/history",
+                ".config/cline/cache",
+                ".config/cline/history",
+            ],
+            file_type: "cache",
+        },
         // Amp
         ChatHistoryPattern {
             tool: "Amp",
@@ -563,6 +574,7 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
         (".kiro", "Kiro CLI"),
         (".iflow", "iFlow CLI"),
         (".qwen", "Qwen Code"),
+        (".cline", "Cline"),
         (".amp", "Amp"),
         (".crush", "Crush"),
     ];
@@ -654,6 +666,8 @@ mod tests {
         fs::write(project.join("package.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".qwen")).unwrap();
         fs::write(project.join(".qwen/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".cline")).unwrap();
+        fs::write(project.join(".cline/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".amp")).unwrap();
         fs::write(project.join(".amp/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".crush")).unwrap();

@@ -1,29 +1,14 @@
 import { useMemo, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { ConfirmDialog } from '../shared/ConfirmDialog';
-
-// Types for chat history
-interface ChatHistoryFile {
-    id: string;
-    name: string;
-    path: string;
-    size: number;
-    size_display: string;
-    ai_tool: string;
-    file_type: string;
-    is_directory: boolean;
-}
-
-interface ProjectChatHistory {
-    id: string;
-    name: string;
-    project_path: string;
-    chat_files: ChatHistoryFile[];
-    total_size: number;
-    total_size_display: string;
-    ai_tools_detected: string[];
-}
+import {
+    ChatHistoryFile,
+    ProjectChatHistory,
+    deleteChatFile,
+    deleteMultipleChatFiles,
+    scanChatHistory,
+    scanGlobalChatHistory,
+} from '../../ipc/commands';
 
 type PendingChatDeleteAction =
     | {
@@ -110,10 +95,7 @@ export function ChatHistoryView() {
         setSelectedFiles(new Set());
         setExpandedProjects(new Set());
         try {
-            const result = await invoke<ProjectChatHistory[]>('scan_chat_history_cmd', {
-                path: scanPath,
-                maxDepth: scanDepth,
-            });
+            const result = await scanChatHistory(scanPath, scanDepth);
             setProjects(result);
         } catch (e) {
             setError(String(e));
@@ -128,7 +110,7 @@ export function ChatHistoryView() {
         setError(null);
         setSelectedFiles(new Set());
         try {
-            const result = await invoke<ChatHistoryFile[]>('scan_global_chat_history_cmd');
+            const result = await scanGlobalChatHistory();
             setGlobalFiles(result);
         } catch (e) {
             setError(String(e));
@@ -204,9 +186,7 @@ export function ChatHistoryView() {
         setError(null);
         try {
             if (action.kind === 'selected') {
-                const result = await invoke<[number, number, string[]]>('delete_multiple_chat_files', {
-                    paths: action.paths,
-                });
+                const result = await deleteMultipleChatFiles(action.paths);
                 const [success, fail, errors] = result;
 
                 if (success > 0) {
@@ -225,7 +205,7 @@ export function ChatHistoryView() {
                     }));
                 }
             } else {
-                await invoke<string>('delete_chat_file_cmd', { path: action.file.path });
+                await deleteChatFile(action.file.path);
                 if (action.tab === 'projects') {
                     await handleScanProjects();
                 } else {

@@ -105,6 +105,7 @@ const DEV_PROCESS_PATTERNS: &[(&str, &str)] = &[
     ("cody", "AI Tool"),
     ("cody-agent", "AI Tool"),
     ("qwen", "AI Tool"),
+    ("cline", "AI Tool"),
     ("amp", "AI Tool"),
     ("crush", "AI Tool"),
     ("amazonq", "AI Tool"),

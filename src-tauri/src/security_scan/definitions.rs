@@ -550,6 +550,32 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         },
 
         // =====================================
+        // Cline CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "cline".into(),
+            name: "Cline CLI".into(),
+            description: "Autonomous coding agent CLI from Cline".into(),
+            docs_url: "https://cline.bot".into(),
+            process_names: vec!["cline".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Cline Config".into(),
+                description: "Provider API keys or auth tokens stored in Cline config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-|api_key|apiKey|access_token|refresh_token|ANTHROPIC_API_KEY|OPENAI_API_KEY".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Keep provider keys in environment variables or secret storage instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".cline/".into(),
+                ".config/cline/".into(),
+            ],
+        },
+
+        // =====================================
         // Amp
         // =====================================
         AiToolSecurityRule {
@@ -660,7 +686,7 @@ mod tests {
             .map(|rule| rule.id)
             .collect();
         for id in [
-            "claude", "codex", "gemini", "copilot", "qwen", "amp", "crush", "amazonq",
+            "claude", "codex", "gemini", "copilot", "qwen", "cline", "amp", "crush", "amazonq",
         ] {
             assert!(
                 ids.contains(&id.to_string()),

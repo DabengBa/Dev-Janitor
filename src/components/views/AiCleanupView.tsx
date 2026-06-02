@@ -206,6 +206,8 @@ export function AiCleanupView() {
         'Tabnine AI cache': t('ai_cleanup.reasons.tabnine_cache'),
         'OpenAI Codex cache': t('ai_cleanup.reasons.codex_cache'),
         'Continue AI cache': t('ai_cleanup.reasons.continue_cache'),
+        'Cline cache': t('ai_cleanup.reasons.cline_cache'),
+        'Cline history': t('ai_cleanup.reasons.cline_history'),
         'Amazon Q cache': t('ai_cleanup.reasons.amazonq_cache'),
         'CodeWhisperer cache': t('ai_cleanup.reasons.codewhisperer_cache'),
         'Windows NUL file (often created by AI tools)': t('ai_cleanup.reasons.windows_nul'),

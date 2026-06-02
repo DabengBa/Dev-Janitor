@@ -192,6 +192,23 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         config_extensions: &["json", "toml", "yaml", "yml"],
     },
     AiToolMetadata {
+        id: "cline",
+        name: "Cline CLI",
+        description: "Autonomous coding agent CLI from Cline",
+        docs_url: "https://cline.bot",
+        commands: &["cline"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".cline", ".config/cline"],
+        config_files: &[
+            ".cline/config.json",
+            ".cline/settings.json",
+            ".config/cline/config.json",
+            ".config/cline/settings.json",
+        ],
+        config_extensions: &["json", "jsonc", "toml", "yaml", "yml"],
+    },
+    AiToolMetadata {
         id: "amp",
         name: "Amp",
         description: "Sourcegraph's agentic coding tool for the terminal",
@@ -252,7 +269,8 @@ pub fn normalize_ai_tool_id(id: &str) -> Option<&'static str> {
         "iflow" | "iflow_cli" => Some("iflow"),
         "copilot" | "github_copilot" => Some("copilot"),
         "qwen" | "qwen_code" => Some("qwen"),
-        "amp" | "sourcegraph_amp" => Some("amp"),
+        "cline" | "cline_cli" => Some("cline"),
+        "amp" | "sourcegraph_amp" | "ampcode_cli" => Some("amp"),
         "crush" => Some("crush"),
         "amazonq" | "amazon_q" | "q_cli" => Some("amazonq"),
         _ => None,
@@ -276,6 +294,7 @@ mod tests {
         assert!(ids.contains(&"iflow"));
         assert!(ids.contains(&"copilot"));
         assert!(ids.contains(&"qwen"));
+        assert!(ids.contains(&"cline"));
         assert!(ids.contains(&"amp"));
         assert!(ids.contains(&"crush"));
         assert!(ids.contains(&"amazonq"));
@@ -294,6 +313,8 @@ mod tests {
         assert_eq!(normalize_ai_tool_id("iflow_cli"), Some("iflow"));
         assert_eq!(normalize_ai_tool_id("github_copilot"), Some("copilot"));
         assert_eq!(normalize_ai_tool_id("qwen_code"), Some("qwen"));
+        assert_eq!(normalize_ai_tool_id("cline_cli"), Some("cline"));
+        assert_eq!(normalize_ai_tool_id("ampcode_cli"), Some("amp"));
         assert_eq!(normalize_ai_tool_id("q_cli"), Some("amazonq"));
     }
 }

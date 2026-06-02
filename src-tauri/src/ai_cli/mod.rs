@@ -124,10 +124,20 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             update: "npm install -g @qwen-code/qwen-code@latest".to_string(),
             uninstall: "npm uninstall -g @qwen-code/qwen-code".to_string(),
         },
+        "cline" => ToolLifecycleCommands {
+            install: "npm install -g cline".to_string(),
+            update: "npm install -g cline@latest".to_string(),
+            uninstall: "npm uninstall -g cline".to_string(),
+        },
         "amp" => ToolLifecycleCommands {
-            install: "npm install -g @sourcegraph/amp".to_string(),
-            update: "npm install -g @sourcegraph/amp@latest".to_string(),
-            uninstall: "npm uninstall -g @sourcegraph/amp".to_string(),
+            install: if cfg!(target_os = "windows") {
+                "powershell -ExecutionPolicy ByPass -c \"irm https://ampcode.com/install.ps1 | iex\""
+                    .to_string()
+            } else {
+                "curl -fsSL https://ampcode.com/install.sh | bash".to_string()
+            },
+            update: "amp update || npm install -g @ampcode/cli@latest".to_string(),
+            uninstall: "npm uninstall -g @ampcode/cli".to_string(),
         },
         "crush" => ToolLifecycleCommands {
             install: "npm install -g @charmland/crush".to_string(),
@@ -447,6 +457,13 @@ mod tests {
 
         let copilot = lifecycle_commands("copilot");
         assert!(copilot.install.contains("@github/copilot"));
+
+        let cline = lifecycle_commands("cline");
+        assert_eq!(cline.install, "npm install -g cline");
+
+        let amp = lifecycle_commands("amp");
+        assert!(amp.install.contains("ampcode.com/install"));
+        assert!(amp.update.contains("@ampcode/cli@latest"));
     }
 }
 
@@ -670,13 +687,39 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         ("qwen", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@qwen-code/qwen-code"])
         }
-        ("amp", ToolAction::Install) => run_command("npm", &["install", "-g", "@sourcegraph/amp"]),
-        ("amp", ToolAction::Update) => {
-            run_command("npm", &["install", "-g", "@sourcegraph/amp@latest"])
+        ("cline", ToolAction::Install) => run_command("npm", &["install", "-g", "cline"]),
+        ("cline", ToolAction::Update) => run_command("npm", &["install", "-g", "cline@latest"]),
+        ("cline", ToolAction::Uninstall) => run_command("npm", &["uninstall", "-g", "cline"]),
+        ("amp", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-ExecutionPolicy".to_string(),
+                        "ByPass".to_string(),
+                        "-c".to_string(),
+                        "irm https://ampcode.com/install.ps1 | iex".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -fsSL https://ampcode.com/install.sh | bash")
+            }
         }
-        ("amp", ToolAction::Uninstall) => {
-            run_command("npm", &["uninstall", "-g", "@sourcegraph/amp"])
-        }
+        ("amp", ToolAction::Update) => run_first_success(&[
+            ("amp", vec!["update".to_string()]),
+            (
+                "npm",
+                vec![
+                    "install".to_string(),
+                    "-g".to_string(),
+                    "@ampcode/cli@latest".to_string(),
+                ],
+            ),
+        ]),
+        ("amp", ToolAction::Uninstall) => run_command("npm", &["uninstall", "-g", "@ampcode/cli"]),
         ("crush", ToolAction::Install) => {
             run_command("npm", &["install", "-g", "@charmland/crush"])
         }

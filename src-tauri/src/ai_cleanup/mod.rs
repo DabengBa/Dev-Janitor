@@ -41,6 +41,11 @@ const AI_TOOL_PATTERNS: &[(&str, &str)] = &[
     (".config/github-copilot", "GitHub Copilot config"),
     // Qwen Code
     (".qwen/.cache", "Qwen Code cache"),
+    // Cline
+    (".cline/cache", "Cline cache"),
+    (".cline/history", "Cline history"),
+    (".config/cline/cache", "Cline cache"),
+    (".config/cline/history", "Cline history"),
     // Amp
     (".amp/cache", "Amp cache"),
     (".config/amp/cache", "Amp cache"),
@@ -652,6 +657,8 @@ mod tests {
         fs::write(project.join("package.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".qwen")).unwrap();
         fs::write(project.join(".qwen/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".cline")).unwrap();
+        fs::write(project.join(".cline/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".amp")).unwrap();
         fs::write(project.join(".amp/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".crush")).unwrap();
@@ -665,6 +672,10 @@ mod tests {
         assert!(
             !result_paths.iter().any(|path| path.contains(".qwen")),
             ".qwen project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".cline")),
+            ".cline project settings should not be treated as AI junk"
         );
         assert!(
             !result_paths.iter().any(|path| path.contains(".amp")),

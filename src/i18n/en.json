@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Dev Janitor",
-        "version": "v2.4.0"
+        "version": "v2.4.1"
     },
     "nav": {
         "tools": "Tools",
@@ -165,6 +165,8 @@
             "tabnine_cache": "Tabnine AI cache",
             "codex_cache": "OpenAI Codex cache",
             "continue_cache": "Continue AI cache",
+            "cline_cache": "Cline cache",
+            "cline_history": "Cline history",
             "amazonq_cache": "Amazon Q cache",
             "codewhisperer_cache": "CodeWhisperer cache",
             "windows_nul": "Windows NUL file (often created by AI tools)",
@@ -389,6 +391,10 @@
                 "name": "Qwen Code",
                 "description": "Qwen's open-source terminal coding agent"
             },
+            "cline": {
+                "name": "Cline CLI",
+                "description": "Autonomous coding agent CLI from Cline"
+            },
             "amp": {
                 "name": "Amp",
                 "description": "Sourcegraph's agentic coding tool for the terminal"
@@ -434,9 +440,7 @@
         "theme_system": "System",
         "language": "Language",
         "language_en": "English",
-        "language_zh": "Simplified Chinese",
-        "ai_endpoint": "Custom AI Endpoint",
-        "ai_endpoint_placeholder": "https://api.openai.com/v1"
+        "language_zh": "Simplified Chinese"
     },
     "updater": {
         "available": "Version {{version}} is available. Install now?",
