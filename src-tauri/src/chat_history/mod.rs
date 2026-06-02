@@ -504,6 +504,7 @@ pub fn delete_project_chat_history(project_path: &str) -> Result<(u32, u32, Stri
 
 /// Fix permissions and delete (Windows only)
 #[cfg(target_os = "windows")]
+#[allow(clippy::permissions_set_readonly_false)]
 fn fix_permissions_and_delete(path: &PathBuf) -> std::io::Result<()> {
     use std::os::windows::fs::MetadataExt;
 
@@ -513,7 +514,7 @@ fn fix_permissions_and_delete(path: &PathBuf) -> std::io::Result<()> {
             let p = entry.path();
             if let Ok(meta) = fs::metadata(p) {
                 let attrs = meta.file_attributes();
-                // Remove read-only attribute (0x1)
+                // Clear Windows FILE_ATTRIBUTE_READONLY before deleting.
                 if attrs & 0x1 != 0 {
                     let mut perms = meta.permissions();
                     perms.set_readonly(false);
