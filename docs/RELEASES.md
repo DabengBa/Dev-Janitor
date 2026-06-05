@@ -4,25 +4,14 @@ This document records the repository release line, GitHub tag state, and Actions
 
 ## Current Release State
 
-- Latest published release: `v2.3.7`
-- Published at: `2026-05-05T05:56:40Z`
-- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.3.7
+- Latest published release: `v2.4.1`
+- Published at: `2026-06-02T05:05:45Z`
+- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.1
 - Published asset count: 22
 - Current app version in this checkout: `2.4.1`
 - Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
 
-The repository also has historical draft releases left by failed or repeated release runs. These drafts are not published artifacts. Before publishing a new release, review and delete stale drafts in GitHub Releases if they are no longer useful for debugging.
-
-Known draft cleanup candidates observed on 2026-06-02:
-
-| Tag | Draft count / note |
-| --- | --- |
-| `v2.3.7` | One stale draft from the first failed `v2.3.7` release attempt |
-| `v2.3.2` | One stale draft |
-| `v2.2.9` | One stale draft |
-| `v2.2.8` | One stale draft-only release; no corresponding local tag in the current tag list |
-| `v2.2.7` | Multiple stale drafts from repeated workflow attempts |
-| `v2.2.5` | One stale draft |
+The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05, and no draft releases were found after cleanup.
 
 ## Version Tags
 
@@ -30,6 +19,8 @@ Recent v2 tags from the local repository after `git fetch --all --tags --prune`:
 
 | Tag | Date | Commit | Subject |
 | --- | --- | --- | --- |
+| `v2.4.1` | 2026-06-02 | `ddfa6b1` | Dev Janitor v2.4.1 |
+| `v2.4.0` | 2026-06-02 | `21990c0` | Dev Janitor v2.4.0 |
 | `v2.3.7` | 2026-05-05 | `e931153` | Dev Janitor v2.3.7 |
 | `v2.3.6` | 2026-04-16 | `79f80d4` | v2.3.6 |
 | `v2.3.5` | 2026-03-07 | `9074852` | release: v2.3.5 |
