@@ -144,7 +144,7 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-          - platform: windows-latest
+          - platform: windows-2025-vs2026
             target: x86_64-pc-windows-msvc
           - platform: macos-latest
             target: x86_64-apple-darwin
@@ -203,7 +203,7 @@ jobs:
 
       # Create Windows Portable Version
       - name: Create Portable ZIP (Windows)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-2025-vs2026'
         id: create_portable
         shell: pwsh
         run: |
@@ -271,7 +271,7 @@ jobs:
           "zip_path=$zipPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Upload Portable ZIP (Windows)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-2025-vs2026'
         env:
           RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
           ZIP_PATH: ${{ steps.create_portable.outputs.zip_path }}

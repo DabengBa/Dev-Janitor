@@ -133,6 +133,8 @@ The release workflow runs on `v*` tag pushes. Manual runs must provide an existi
 
 The release workflow also runs a preflight job before creating the draft release. It checks that the tag matches every version field, then runs the frontend lint/build and Rust format/test/clippy checks on Ubuntu. If this job fails, no release assets are built and no new draft release is created.
 
+Windows CI and release builds use the explicit `windows-2025-vs2026` runner label, matching the June 2026 GitHub-hosted runner migration instead of relying on the moving `windows-latest` alias.
+
 After a successful release:
 
 1. Confirm the release is published, not draft.

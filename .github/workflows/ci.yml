@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, windows-latest, macos-latest]
+        platform: [ubuntu-22.04, windows-2025-vs2026, macos-latest]
     
     runs-on: ${{ matrix.platform }}
     
@@ -115,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, windows-latest]
+        platform: [ubuntu-22.04, windows-2025-vs2026]
 
     runs-on: ${{ matrix.platform }}
     steps:
