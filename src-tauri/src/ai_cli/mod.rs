@@ -501,7 +501,11 @@ mod tests {
         assert!(cody.install.contains("@sourcegraph/cody-agent"));
 
         let goose = lifecycle_commands("goose");
-        assert!(goose.install.contains("download_cli.sh"));
+        if cfg!(target_os = "windows") {
+            assert!(is_manual_action(&goose.install));
+        } else {
+            assert!(goose.install.contains("download_cli.sh"));
+        }
         assert_eq!(goose.update, "goose update");
         assert!(is_manual_action(&goose.uninstall));
 

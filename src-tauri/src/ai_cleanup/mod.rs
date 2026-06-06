@@ -202,7 +202,7 @@ fn check_ai_tool_pattern(path: &Path) -> Option<(&'static str, &'static str)> {
         }
 
         let pattern_lower = pattern.to_ascii_lowercase();
-        if path_str == *pattern
+        if path_str == pattern_lower
             || path_str.ends_with(&format!("/{pattern_lower}"))
             || path_str.contains(&format!("/{pattern_lower}/"))
         {
@@ -611,6 +611,7 @@ fn chmod_and_delete(path: &PathBuf) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn temp_project(name: &str) -> PathBuf {
@@ -621,6 +622,14 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("dev-janitor-ai-cleanup-{name}-{nanos}"));
         fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    fn normalize_path(path: &Path) -> String {
+        path.to_string_lossy().replace('\\', "/")
+    }
+
+    fn normalize_path_str(path: &str) -> String {
+        path.replace('\\', "/")
     }
 
     #[test]
@@ -662,7 +671,10 @@ mod tests {
         fs::write(project.join(".gemini/settings.json"), "{}\n").unwrap();
 
         let results = scan_ai_junk(project.to_str().unwrap(), 4);
-        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+        let result_paths: Vec<_> = results
+            .iter()
+            .map(|file| normalize_path_str(&file.path))
+            .collect();
 
         assert!(
             !result_paths.iter().any(|path| path.contains(".claude")),
@@ -726,7 +738,10 @@ mod tests {
         fs::write(project.join(".openhands/setup.sh"), "#!/bin/sh\n").unwrap();
 
         let results = scan_ai_junk(project.to_str().unwrap(), 4);
-        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+        let result_paths: Vec<_> = results
+            .iter()
+            .map(|file| normalize_path_str(&file.path))
+            .collect();
 
         assert!(
             !result_paths.iter().any(|path| path.contains(".qwen")),
@@ -790,18 +805,23 @@ mod tests {
         fs::write(&session_store, "sqlite").unwrap();
 
         let results = scan_ai_junk(project.to_str().unwrap(), 4);
-        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+        let result_paths: Vec<_> = results
+            .iter()
+            .map(|file| normalize_path_str(&file.path))
+            .collect();
+        let expected_session_state = normalize_path(&session_state);
+        let expected_session_store = normalize_path(&session_store);
 
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == session_state.to_string_lossy()),
+                .any(|path| path == &expected_session_state),
             "Copilot CLI session-state should be detected as AI junk"
         );
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == session_store.to_string_lossy()),
+                .any(|path| path == &expected_session_store),
             "Copilot CLI session-store.db should be detected as AI junk"
         );
         assert!(
@@ -830,24 +850,28 @@ mod tests {
         fs::write(openhands_conversations.join("conversation.json"), "{}\n").unwrap();
 
         let results = scan_ai_junk(project.to_str().unwrap(), 6);
-        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+        let result_paths: Vec<_> = results
+            .iter()
+            .map(|file| normalize_path_str(&file.path))
+            .collect();
+        let expected_goose_sessions = normalize_path(&goose_sessions);
+        let expected_goose_logs = normalize_path(&goose_logs);
+        let expected_openhands_conversations = normalize_path(&openhands_conversations);
 
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == goose_sessions.to_string_lossy()),
+                .any(|path| path == &expected_goose_sessions),
             "Goose session records should be detected as AI junk"
         );
         assert!(
-            result_paths
-                .iter()
-                .any(|path| *path == goose_logs.to_string_lossy()),
+            result_paths.iter().any(|path| path == &expected_goose_logs),
             "Goose logs should be detected as AI junk"
         );
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == openhands_conversations.to_string_lossy()),
+                .any(|path| path == &expected_openhands_conversations),
             "OpenHands conversation history should be detected as AI junk"
         );
 
@@ -865,8 +889,8 @@ mod tests {
         let results = scan_ai_junk(project.to_str().unwrap(), 4);
         let matching_paths: Vec<_> = results
             .iter()
-            .filter(|file| file.path.contains(".cline/history"))
-            .map(|file| file.path.as_str())
+            .map(|file| normalize_path_str(&file.path))
+            .filter(|path| path.contains(".cline/history"))
             .collect();
 
         assert_eq!(
@@ -874,7 +898,7 @@ mod tests {
             1,
             "a matched junk directory should be reported once without descendant duplicates"
         );
-        assert_eq!(matching_paths[0], history_dir.to_string_lossy());
+        assert_eq!(matching_paths[0], normalize_path(&history_dir));
 
         fs::remove_dir_all(project).unwrap();
     }

@@ -258,20 +258,27 @@ fn get_size(path: &Path) -> u64 {
 
 /// Check if a path matches any AI tool chat history pattern
 fn check_chat_history_pattern(path: &Path) -> Option<(&'static str, &'static str, &'static str)> {
-    let file_name = path.file_name()?.to_str()?;
-    let path_str = path.to_string_lossy().replace('\\', "/");
+    let file_name = path.file_name()?.to_string_lossy().to_ascii_lowercase();
+    let path_str = path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_ascii_lowercase();
 
     for pattern_group in get_chat_history_patterns() {
         for pattern in &pattern_group.patterns {
+            let pattern_lower = pattern.to_ascii_lowercase();
+
             // Check exact file name match
-            if !pattern.contains('/') && file_name == *pattern {
+            if !pattern.contains('/') && file_name == pattern_lower {
                 return Some((pattern_group.tool, *pattern, pattern_group.file_type));
             }
 
             // Check path-based patterns against both the directory/file itself
             // and descendants below that directory.
             if pattern.contains('/')
-                && (path_str.ends_with(pattern) || path_str.contains(&format!("{pattern}/")))
+                && (path_str == pattern_lower
+                    || path_str.ends_with(&format!("/{pattern_lower}"))
+                    || path_str.contains(&format!("/{pattern_lower}/")))
             {
                 return Some((pattern_group.tool, *pattern, pattern_group.file_type));
             }
@@ -660,6 +667,7 @@ fn is_known_global_chat_history_path(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn temp_project(name: &str) -> PathBuf {
@@ -670,6 +678,14 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("dev-janitor-chat-history-{name}-{nanos}"));
         fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    fn normalize_path(path: &Path) -> String {
+        path.to_string_lossy().replace('\\', "/")
+    }
+
+    fn normalize_path_str(path: &str) -> String {
+        path.replace('\\', "/")
     }
 
     #[test]
@@ -776,19 +792,21 @@ mod tests {
         let result_paths: Vec<_> = results[0]
             .chat_files
             .iter()
-            .map(|file| file.path.as_str())
+            .map(|file| normalize_path_str(&file.path))
             .collect();
+        let expected_session_state = normalize_path(&session_state);
+        let expected_session_store = normalize_path(&session_store);
 
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == session_state.to_string_lossy()),
+                .any(|path| path == &expected_session_state),
             "Copilot CLI session-state should be detected as chat history"
         );
         assert!(
             result_paths
                 .iter()
-                .any(|path| *path == session_store.to_string_lossy()),
+                .any(|path| path == &expected_session_store),
             "Copilot CLI session-store.db should be detected as chat history"
         );
         assert!(
@@ -830,17 +848,17 @@ mod tests {
         let result_paths: Vec<_> = results[0]
             .chat_files
             .iter()
-            .map(|file| file.path.as_str())
+            .map(|file| normalize_path_str(&file.path))
             .collect();
 
         for expected_path in [
-            goose_history.to_string_lossy(),
-            goose_sessions.to_string_lossy(),
-            goose_logs.to_string_lossy(),
-            openhands_conversations.to_string_lossy(),
+            normalize_path(&goose_history),
+            normalize_path(&goose_sessions),
+            normalize_path(&goose_logs),
+            normalize_path(&openhands_conversations),
         ] {
             assert!(
-                result_paths.iter().any(|path| *path == expected_path),
+                result_paths.iter().any(|path| path == &expected_path),
                 "{} should be detected as chat history",
                 expected_path
             );
