@@ -70,6 +70,98 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         config_extensions: &["json", "jsonc"],
     },
     AiToolMetadata {
+        id: "goose",
+        name: "Goose CLI",
+        description: "Local-first extensible AI agent with MCP support",
+        docs_url: "https://goose-docs.ai/docs/getting-started/installation",
+        commands: &["goose"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".config/goose", ".local/share/goose", ".local/state/goose"],
+        config_files: &[
+            ".config/goose/config.yaml",
+            ".config/goose/profiles.yaml",
+            ".config/goose/history.txt",
+            ".local/share/goose/sessions",
+            ".local/state/goose/logs",
+        ],
+        config_extensions: &["yaml", "yml", "json", "jsonl", "txt", "db"],
+    },
+    AiToolMetadata {
+        id: "openhands",
+        name: "OpenHands CLI",
+        description: "Open-source software development agent with CLI and web modes",
+        docs_url: "https://docs.openhands.dev/openhands/usage/cli/installation",
+        commands: &["openhands"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".openhands"],
+        config_files: &[
+            ".openhands/settings.json",
+            ".openhands/conversations",
+            ".openhands/hooks.json",
+            ".openhands/setup.sh",
+            ".openhands/hooks",
+        ],
+        config_extensions: &["json", "toml", "yaml", "yml", "sh"],
+    },
+    AiToolMetadata {
+        id: "auggie",
+        name: "Auggie CLI",
+        description: "Augment Code's terminal coding agent",
+        docs_url: "https://docs.augmentcode.com/cli/overview",
+        commands: &["auggie"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".augment"],
+        config_files: &[
+            ".augment/settings.json",
+            ".augment/commands",
+            ".augment/skills",
+        ],
+        config_extensions: &["json", "jsonc", "md"],
+    },
+    AiToolMetadata {
+        id: "kilo",
+        name: "Kilo Code CLI",
+        description: "Kilo Code's terminal coding agent",
+        docs_url: "https://kilo.ai/docs/code-with-ai/platforms/cli",
+        commands: &["kilo"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".config/kilo"],
+        config_files: &[
+            ".config/kilo/kilo.jsonc",
+            ".config/kilo/opencode.json",
+            ".config/kilo/opencode.jsonc",
+            ".config/kilo/config.json",
+        ],
+        config_extensions: &["json", "jsonc"],
+    },
+    AiToolMetadata {
+        id: "junie",
+        name: "Junie CLI",
+        description: "JetBrains' terminal coding agent",
+        docs_url: "https://junie.jetbrains.com/docs/junie-cli.html",
+        commands: &["junie"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".junie"],
+        config_files: &[
+            ".junie/config.json",
+            ".junie/settings.json",
+            ".junie/AGENTS.md",
+            ".junie/mcp/mcp.json",
+            ".junie/skills",
+            ".junie/commands",
+            ".junie/agents",
+            ".junie/models",
+            ".junie/extensions/extensions.json",
+            ".junie/extensions/marketplaces.json",
+        ],
+        config_extensions: &["json", "md"],
+    },
+    AiToolMetadata {
         id: "gemini",
         name: "Gemini CLI",
         description: "Google's open-source terminal AI agent",
@@ -260,6 +352,11 @@ pub fn normalize_ai_tool_id(id: &str) -> Option<&'static str> {
         "claude" => Some("claude"),
         "codex" => Some("codex"),
         "opencode" => Some("opencode"),
+        "goose" | "goose_cli" => Some("goose"),
+        "openhands" | "openhands_cli" | "open_hands" => Some("openhands"),
+        "auggie" | "augment" | "augment_cli" => Some("auggie"),
+        "kilo" | "kilo_code" | "kilocode" => Some("kilo"),
+        "junie" | "jetbrains_junie" => Some("junie"),
         "gemini" => Some("gemini"),
         "aider" => Some("aider"),
         "continue" | "continue_cli" => Some("continue"),
@@ -290,6 +387,11 @@ mod tests {
         let ids: Vec<_> = ai_tools().iter().map(|tool| tool.id).collect();
         assert!(ids.contains(&"codex"));
         assert!(ids.contains(&"claude"));
+        assert!(ids.contains(&"goose"));
+        assert!(ids.contains(&"openhands"));
+        assert!(ids.contains(&"auggie"));
+        assert!(ids.contains(&"kilo"));
+        assert!(ids.contains(&"junie"));
         assert!(ids.contains(&"kiro"));
         assert!(ids.contains(&"iflow"));
         assert!(ids.contains(&"copilot"));
@@ -310,6 +412,11 @@ mod tests {
     fn normalizes_aliases() {
         assert_eq!(normalize_ai_tool_id("cursor_cli"), Some("cursor"));
         assert_eq!(normalize_ai_tool_id("continue_cli"), Some("continue"));
+        assert_eq!(normalize_ai_tool_id("goose_cli"), Some("goose"));
+        assert_eq!(normalize_ai_tool_id("open_hands"), Some("openhands"));
+        assert_eq!(normalize_ai_tool_id("augment_cli"), Some("auggie"));
+        assert_eq!(normalize_ai_tool_id("kilocode"), Some("kilo"));
+        assert_eq!(normalize_ai_tool_id("jetbrains_junie"), Some("junie"));
         assert_eq!(normalize_ai_tool_id("iflow_cli"), Some("iflow"));
         assert_eq!(normalize_ai_tool_id("github_copilot"), Some("copilot"));
         assert_eq!(normalize_ai_tool_id("qwen_code"), Some("qwen"));

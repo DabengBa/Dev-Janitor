@@ -59,6 +59,51 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             update: "npm install -g opencode-ai@latest".to_string(),
             uninstall: "npm uninstall -g opencode-ai".to_string(),
         },
+        "goose" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "Manual install from Goose CLI docs".to_string()
+            } else {
+                "curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | bash".to_string()
+            },
+            update: "goose update".to_string(),
+            uninstall: "Manual uninstall from Goose CLI docs".to_string(),
+        },
+        "openhands" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "WSL required: uv tool install openhands --python 3.12".to_string()
+            } else {
+                "uv tool install openhands --python 3.12".to_string()
+            },
+            update: if cfg!(target_os = "windows") {
+                "WSL required: uv tool upgrade openhands --python 3.12".to_string()
+            } else {
+                "uv tool upgrade openhands --python 3.12".to_string()
+            },
+            uninstall: if cfg!(target_os = "windows") {
+                "WSL required: uv tool uninstall openhands".to_string()
+            } else {
+                "uv tool uninstall openhands".to_string()
+            },
+        },
+        "auggie" => ToolLifecycleCommands {
+            install: "npm install -g @augmentcode/auggie".to_string(),
+            update: "auggie upgrade --skip-confirmation".to_string(),
+            uninstall: "npm uninstall -g @augmentcode/auggie".to_string(),
+        },
+        "kilo" => ToolLifecycleCommands {
+            install: "npm install -g @kilocode/cli".to_string(),
+            update: "kilo upgrade".to_string(),
+            uninstall: "kilo uninstall".to_string(),
+        },
+        "junie" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "powershell -NoProfile -ExecutionPolicy Bypass -Command \"iex (irm 'https://junie.jetbrains.com/install.ps1')\"".to_string()
+            } else {
+                "curl -fsSL https://junie.jetbrains.com/install.sh | bash".to_string()
+            },
+            update: "Manual update from Junie CLI docs".to_string(),
+            uninstall: "Manual uninstall from Junie CLI docs".to_string(),
+        },
         "gemini" => ToolLifecycleCommands {
             install: "npm install -g @google/gemini-cli".to_string(),
             update: "npm install -g @google/gemini-cli@latest".to_string(),
@@ -455,6 +500,30 @@ mod tests {
         let cody = lifecycle_commands("cody");
         assert!(cody.install.contains("@sourcegraph/cody-agent"));
 
+        let goose = lifecycle_commands("goose");
+        assert!(goose.install.contains("download_cli.sh"));
+        assert_eq!(goose.update, "goose update");
+        assert!(is_manual_action(&goose.uninstall));
+
+        let openhands = lifecycle_commands("openhands");
+        assert!(openhands.install.contains("uv tool install openhands"));
+        assert!(openhands.update.contains("uv tool upgrade openhands"));
+        assert!(openhands.uninstall.contains("uv tool uninstall openhands"));
+
+        let auggie = lifecycle_commands("auggie");
+        assert!(auggie.install.contains("@augmentcode/auggie"));
+        assert_eq!(auggie.update, "auggie upgrade --skip-confirmation");
+
+        let kilo = lifecycle_commands("kilo");
+        assert!(kilo.install.contains("@kilocode/cli"));
+        assert_eq!(kilo.update, "kilo upgrade");
+        assert_eq!(kilo.uninstall, "kilo uninstall");
+
+        let junie = lifecycle_commands("junie");
+        assert!(junie.install.contains("junie.jetbrains.com/install"));
+        assert!(is_manual_action(&junie.update));
+        assert!(is_manual_action(&junie.uninstall));
+
         let copilot = lifecycle_commands("copilot");
         assert!(copilot.install.contains("@github/copilot"));
 
@@ -517,6 +586,87 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         }
         ("opencode", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "opencode-ai"])
+        }
+        ("goose", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                Err("Goose CLI requires manual installation on Windows".to_string())
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command(
+                    "curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | bash",
+                )
+            }
+        }
+        ("goose", ToolAction::Update) => run_command("goose", &["update"]),
+        ("goose", ToolAction::Uninstall) => {
+            Err("Goose CLI requires manual uninstallation".to_string())
+        }
+        ("openhands", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                Err("OpenHands CLI installation should be run inside WSL".to_string())
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_command("uv", &["tool", "install", "openhands", "--python", "3.12"])
+            }
+        }
+        ("openhands", ToolAction::Update) => {
+            #[cfg(target_os = "windows")]
+            {
+                Err("OpenHands CLI update should be run inside WSL".to_string())
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_command("uv", &["tool", "upgrade", "openhands", "--python", "3.12"])
+            }
+        }
+        ("openhands", ToolAction::Uninstall) => {
+            #[cfg(target_os = "windows")]
+            {
+                Err("OpenHands CLI uninstallation should be run inside WSL".to_string())
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_command("uv", &["tool", "uninstall", "openhands"])
+            }
+        }
+        ("auggie", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@augmentcode/auggie"])
+        }
+        ("auggie", ToolAction::Update) => {
+            run_command("auggie", &["upgrade", "--skip-confirmation"])
+        }
+        ("auggie", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@augmentcode/auggie"])
+        }
+        ("kilo", ToolAction::Install) => run_command("npm", &["install", "-g", "@kilocode/cli"]),
+        ("kilo", ToolAction::Update) => run_command("kilo", &["upgrade"]),
+        ("kilo", ToolAction::Uninstall) => run_command("kilo", &["uninstall"]),
+        ("junie", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-NoProfile".to_string(),
+                        "-ExecutionPolicy".to_string(),
+                        "Bypass".to_string(),
+                        "-Command".to_string(),
+                        "iex (irm 'https://junie.jetbrains.com/install.ps1')".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -fsSL https://junie.jetbrains.com/install.sh | bash")
+            }
+        }
+        ("junie", ToolAction::Update) => Err("Junie CLI requires manual update".to_string()),
+        ("junie", ToolAction::Uninstall) => {
+            Err("Junie CLI requires manual uninstallation".to_string())
         }
         ("gemini", ToolAction::Install) => {
             run_command("npm", &["install", "-g", "@google/gemini-cli"])

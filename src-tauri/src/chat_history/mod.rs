@@ -10,6 +10,45 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+const SKIPPED_SCAN_DIRECTORIES: &[&str] = &[
+    "node_modules",
+    ".git",
+    ".svn",
+    "target",
+    "venv",
+    ".venv",
+    "__pycache__",
+    "dist",
+    "build",
+    "vendor",
+];
+
+const GLOBAL_CHAT_HISTORY_PATTERNS: &[(&str, &str)] = &[
+    (".claude", "Claude Code"),
+    (".codex", "OpenAI Codex"),
+    (".opencode", "OpenCode"),
+    (".copilot/session-state", "GitHub Copilot CLI"),
+    (".copilot/session-store.db", "GitHub Copilot CLI"),
+    (".config/goose/history.txt", "Goose CLI"),
+    (".local/share/goose/sessions", "Goose CLI"),
+    (".local/state/goose/logs", "Goose CLI"),
+    (".openhands/conversations", "OpenHands CLI"),
+    (".gemini", "Gemini CLI"),
+    (".aider", "Aider"),
+    (".cursor", "Cursor"),
+    (".continue", "Continue"),
+    (".sourcegraph", "Cody"),
+    (".codeium", "Codeium"),
+    (".windsurf", "Windsurf"),
+    (".amazonq", "Amazon Q"),
+    (".kiro", "Kiro CLI"),
+    (".iflow", "iFlow CLI"),
+    (".qwen", "Qwen Code"),
+    (".cline", "Cline"),
+    (".amp", "Amp"),
+    (".crush", "Crush"),
+];
+
 /// Represents a project with AI chat history
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectChatHistory {
@@ -83,16 +122,32 @@ fn get_chat_history_patterns() -> Vec<ChatHistoryPattern> {
         ChatHistoryPattern {
             tool: "GitHub Copilot",
             patterns: vec![
-                ".copilot", // Copilot cache
-                ".config/github-copilot",
+                ".copilot/session-state",    // Copilot CLI session files
+                ".copilot/session-store.db", // Copilot CLI session store
             ],
-            file_type: "cache",
+            file_type: "chat_history",
         },
         // Qwen Code
         ChatHistoryPattern {
             tool: "Qwen Code",
             patterns: vec![".qwen/.cache", ".config/qwen/cache"],
             file_type: "cache",
+        },
+        // Goose
+        ChatHistoryPattern {
+            tool: "Goose CLI",
+            patterns: vec![
+                ".config/goose/history.txt",
+                ".local/share/goose/sessions",
+                ".local/state/goose/logs",
+            ],
+            file_type: "chat_history",
+        },
+        // OpenHands
+        ChatHistoryPattern {
+            tool: "OpenHands CLI",
+            patterns: vec![".openhands/conversations"],
+            file_type: "chat_history",
         },
         // Cline
         ChatHistoryPattern {
@@ -251,6 +306,13 @@ fn is_dev_project(path: &Path) -> bool {
     false
 }
 
+fn is_skipped_scan_dir(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| SKIPPED_SCAN_DIRECTORIES.contains(&name))
+        .unwrap_or(false)
+}
+
 fn user_home_dir() -> Option<PathBuf> {
     std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
@@ -297,7 +359,9 @@ fn validate_chat_history_delete_target(path: &Path) -> Result<PathBuf, String> {
         ));
     }
 
-    if check_chat_history_pattern(&canonical).is_some() {
+    if check_chat_history_pattern(&canonical).is_some()
+        || is_known_global_chat_history_path(&canonical)
+    {
         Ok(canonical)
     } else {
         Err(format!(
@@ -318,6 +382,9 @@ pub fn scan_chat_history(root_path: &str, max_depth: usize) -> Vec<ProjectChatHi
     let projects: Vec<PathBuf> = WalkDir::new(&root)
         .max_depth(max_depth)
         .into_iter()
+        .filter_entry(|entry| {
+            entry.depth() == 0 || !entry.file_type().is_dir() || !is_skipped_scan_dir(entry.path())
+        })
         .filter_map(|e| e.ok())
         .filter(|e| e.path().is_dir())
         .filter(|e| is_dev_project(e.path()))
@@ -331,25 +398,17 @@ pub fn scan_chat_history(root_path: &str, max_depth: usize) -> Vec<ProjectChatHi
             let mut chat_files: Vec<ChatHistoryFile> = Vec::new();
             let mut ai_tools: HashMap<String, bool> = HashMap::new();
 
-            // Scan the project directory for chat history files
-            for entry in WalkDir::new(project_path)
-                .max_depth(3) // Don't go too deep within a project
-                .into_iter()
-                .filter_map(|e| e.ok())
-            {
+            // Scan the project directory for chat history files. Depth 4 covers
+            // nested home-style paths such as .local/share/goose/sessions.
+            let mut entries = WalkDir::new(project_path).max_depth(4).into_iter();
+            while let Some(entry_result) = entries.next() {
+                let Ok(entry) = entry_result else {
+                    continue;
+                };
                 let path = entry.path();
 
-                // Skip node_modules, .git, target, venv, etc.
-                let path_str = path.to_string_lossy();
-                if path_str.contains("node_modules")
-                    || path_str.contains(".git/")
-                    || path_str.contains(".git\\")
-                    || path_str.contains("target/")
-                    || path_str.contains("target\\")
-                    || path_str.contains("venv/")
-                    || path_str.contains("venv\\")
-                    || path_str.contains("__pycache__")
-                {
+                if entry.depth() != 0 && entry.file_type().is_dir() && is_skipped_scan_dir(path) {
+                    entries.skip_current_dir();
                     continue;
                 }
 
@@ -375,6 +434,10 @@ pub fn scan_chat_history(root_path: &str, max_depth: usize) -> Vec<ProjectChatHi
                         file_type: file_type.to_string(),
                         is_directory: is_dir,
                     });
+
+                    if entry.file_type().is_dir() {
+                        entries.skip_current_dir();
+                    }
                 }
             }
 
@@ -557,31 +620,9 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
     let home_path = PathBuf::from(&home);
     let mut global_files: Vec<ChatHistoryFile> = Vec::new();
 
-    // Scan known global AI tool directories
-    let global_patterns = [
-        (".claude", "Claude Code"),
-        (".codex", "OpenAI Codex"),
-        (".opencode", "OpenCode"),
-        (".gemini", "Gemini CLI"),
-        (".aider", "Aider"),
-        (".cursor", "Cursor"),
-        (".continue", "Continue"),
-        (".sourcegraph", "Cody"),
-        (".copilot", "GitHub Copilot"),
-        (".codeium", "Codeium"),
-        (".windsurf", "Windsurf"),
-        (".amazonq", "Amazon Q"),
-        (".kiro", "Kiro CLI"),
-        (".iflow", "iFlow CLI"),
-        (".qwen", "Qwen Code"),
-        (".cline", "Cline"),
-        (".amp", "Amp"),
-        (".crush", "Crush"),
-    ];
-
-    for (dir_name, tool) in &global_patterns {
+    for (dir_name, tool) in GLOBAL_CHAT_HISTORY_PATTERNS {
         let dir_path = home_path.join(dir_name);
-        if dir_path.exists() && dir_path.is_dir() {
+        if dir_path.exists() {
             let size = get_size(&dir_path);
             let id = format!("{:x}", md5::compute(dir_path.to_string_lossy().as_bytes()));
 
@@ -593,7 +634,7 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
                 size_display: format_size(size),
                 ai_tool: tool.to_string(),
                 file_type: "global_config".to_string(),
-                is_directory: true,
+                is_directory: dir_path.is_dir(),
             });
         }
     }
@@ -601,6 +642,19 @@ pub fn scan_global_chat_history() -> Vec<ChatHistoryFile> {
     // Sort by size
     global_files.sort_by_key(|file| Reverse(file.size));
     global_files
+}
+
+fn is_known_global_chat_history_path(path: &Path) -> bool {
+    let Some(home) = user_home_dir().and_then(|home| home.canonicalize().ok()) else {
+        return false;
+    };
+
+    GLOBAL_CHAT_HISTORY_PATTERNS.iter().any(|(dir_name, _)| {
+        home.join(dir_name)
+            .canonicalize()
+            .map(|known_path| known_path == path)
+            .unwrap_or(false)
+    })
 }
 
 #[cfg(test)]
@@ -642,6 +696,11 @@ mod tests {
         fs::write(project.join(".claude/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".codex")).unwrap();
         fs::write(project.join(".codex/config.toml"), "model = \"gpt-5.4\"\n").unwrap();
+        fs::create_dir_all(project.join(".copilot")).unwrap();
+        fs::write(project.join(".copilot/config.json"), "{}\n").unwrap();
+        fs::write(project.join(".copilot/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/github-copilot")).unwrap();
+        fs::write(project.join(".config/github-copilot/config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".cursor")).unwrap();
         fs::write(project.join(".cursor/cli-config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".continue")).unwrap();
@@ -674,11 +733,160 @@ mod tests {
         fs::write(project.join(".crush/config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".amazonq")).unwrap();
         fs::write(project.join(".amazonq/mcp.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".augment")).unwrap();
+        fs::write(project.join(".augment/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/kilo")).unwrap();
+        fs::write(project.join(".config/kilo/config.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".junie/mcp")).unwrap();
+        fs::write(project.join(".junie/AGENTS.md"), "project instructions\n").unwrap();
+        fs::write(project.join(".junie/mcp/mcp.json"), "{}\n").unwrap();
+        fs::write(project.join(".goosehints"), "project hints").unwrap();
+        fs::write(project.join("AGENT.md"), "project instructions").unwrap();
+        fs::create_dir_all(project.join(".openhands/hooks")).unwrap();
+        fs::write(project.join(".openhands/hooks.json"), "{}\n").unwrap();
+        fs::write(project.join(".openhands/setup.sh"), "#!/bin/sh\n").unwrap();
 
         let results = scan_chat_history(project.to_str().unwrap(), 4);
         assert!(
             results.is_empty(),
             "active AI project configuration should not be treated as chat history"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn detects_copilot_cli_session_targets_without_config_noise() {
+        let project = temp_project("copilot-cli-session");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".copilot")).unwrap();
+        fs::write(project.join(".copilot/config.json"), "{}\n").unwrap();
+        fs::write(project.join(".copilot/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/github-copilot")).unwrap();
+        fs::write(project.join(".config/github-copilot/config.json"), "{}\n").unwrap();
+
+        let session_state = project.join(".copilot/session-state");
+        let session_store = project.join(".copilot/session-store.db");
+        fs::create_dir_all(&session_state).unwrap();
+        fs::write(session_state.join("events.jsonl"), "{}\n").unwrap();
+        fs::write(&session_store, "sqlite").unwrap();
+
+        let results = scan_chat_history(project.to_str().unwrap(), 4);
+        assert_eq!(results.len(), 1);
+        let result_paths: Vec<_> = results[0]
+            .chat_files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect();
+
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == session_state.to_string_lossy()),
+            "Copilot CLI session-state should be detected as chat history"
+        );
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == session_store.to_string_lossy()),
+            "Copilot CLI session-store.db should be detected as chat history"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.ends_with(".copilot")
+                || path.ends_with(".copilot/config.json")
+                || path.ends_with(".copilot/settings.json")
+                || path.contains(".config/github-copilot")),
+            "Copilot config directories and files should not be treated as chat history"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn detects_goose_and_openhands_project_history_without_config_noise() {
+        let project = temp_project("goose-openhands-history");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::write(project.join(".goosehints"), "project hints").unwrap();
+        fs::write(project.join("AGENT.md"), "project instructions").unwrap();
+        fs::create_dir_all(project.join(".openhands/hooks")).unwrap();
+        fs::write(project.join(".openhands/hooks.json"), "{}\n").unwrap();
+        fs::write(project.join(".openhands/setup.sh"), "#!/bin/sh\n").unwrap();
+
+        let goose_history = project.join(".config/goose/history.txt");
+        let goose_sessions = project.join(".local/share/goose/sessions");
+        let goose_logs = project.join(".local/state/goose/logs");
+        let openhands_conversations = project.join(".openhands/conversations");
+        fs::create_dir_all(goose_history.parent().unwrap()).unwrap();
+        fs::create_dir_all(&goose_sessions).unwrap();
+        fs::create_dir_all(&goose_logs).unwrap();
+        fs::create_dir_all(&openhands_conversations).unwrap();
+        fs::write(&goose_history, "goose history").unwrap();
+        fs::write(goose_sessions.join("sessions.db"), "sessions").unwrap();
+        fs::write(goose_logs.join("goose.log"), "logs").unwrap();
+        fs::write(openhands_conversations.join("conversation.json"), "{}\n").unwrap();
+
+        let results = scan_chat_history(project.to_str().unwrap(), 6);
+        assert_eq!(results.len(), 1);
+        let result_paths: Vec<_> = results[0]
+            .chat_files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect();
+
+        for expected_path in [
+            goose_history.to_string_lossy(),
+            goose_sessions.to_string_lossy(),
+            goose_logs.to_string_lossy(),
+            openhands_conversations.to_string_lossy(),
+        ] {
+            assert!(
+                result_paths.iter().any(|path| *path == expected_path),
+                "{} should be detected as chat history",
+                expected_path
+            );
+        }
+
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".goosehints")
+                || path.contains("AGENT.md")
+                || path.contains(".openhands/hooks")
+                || path.contains(".openhands/setup.sh")),
+            "Goose/OpenHands project instructions should not be treated as chat history"
+        );
+
+        let session_matches = result_paths
+            .iter()
+            .filter(|path| path.contains(".local/share/goose/sessions"))
+            .count();
+        assert_eq!(
+            session_matches, 1,
+            "a matched Goose sessions directory should be reported once"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn skips_dependency_directories_during_project_scan() {
+        let project = temp_project("skip-deps");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join("node_modules/nested/.copilot")).unwrap();
+        fs::write(
+            project.join("node_modules/nested/.copilot/history.json"),
+            "{}\n",
+        )
+        .unwrap();
+        fs::create_dir_all(project.join("target/debug/.cline/history")).unwrap();
+        fs::write(
+            project.join("target/debug/.cline/history/session.json"),
+            "{}\n",
+        )
+        .unwrap();
+
+        let results = scan_chat_history(project.to_str().unwrap(), 6);
+        assert!(
+            results.is_empty(),
+            "dependency and build directories should be pruned before matching chat history"
         );
 
         fs::remove_dir_all(project).unwrap();

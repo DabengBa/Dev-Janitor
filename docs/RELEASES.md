@@ -8,7 +8,7 @@ This document records the repository release line, GitHub tag state, and Actions
 - Published at: `2026-06-02T05:05:45Z`
 - Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.1
 - Published asset count: 22
-- Current app version in this checkout: `2.4.1`
+- Current app version in this checkout: `2.4.2` (unpublished release candidate)
 - Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
 
 The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05, and no draft releases were found after cleanup.
@@ -117,9 +117,34 @@ Version fields that must agree:
 
 The release workflow runs on `v*` tag pushes. Manual runs must provide an existing tag through `release_tag`; this prevents accidentally building a release from `main` or another branch name.
 
+The release workflow also runs a preflight job before creating the draft release. It checks that the tag matches every version field, then runs the frontend lint/build and Rust format/test/clippy checks on Ubuntu. If this job fails, no release assets are built and no new draft release is created.
+
 After a successful release:
 
 1. Confirm the release is published, not draft.
 2. Confirm `latest.json` exists for the updater.
 3. Confirm Windows `.msi`, `.exe`, portable ZIP, macOS `.dmg`, Linux AppImage, `.deb`, `.rpm`, and signatures are present.
 4. Review stale draft releases and delete obsolete ones from GitHub Releases.
+
+Download and inspect the published artifacts locally:
+
+```bash
+artifact_dir=/tmp/dev-janitor-v2.4.2
+rm -rf "$artifact_dir"
+mkdir -p "$artifact_dir"
+gh release download v2.4.2 --dir "$artifact_dir"
+find "$artifact_dir" -maxdepth 1 -type f -printf '%f\n' | sort
+sha256sum "$artifact_dir"/*
+file "$artifact_dir"/*
+python -m json.tool "$artifact_dir/latest.json" >/dev/null
+python - <<'PY'
+import json
+from pathlib import Path
+
+data = json.loads(Path("/tmp/dev-janitor-v2.4.2/latest.json").read_text())
+assert data["version"] == "2.4.2", data
+assert data["platforms"], data
+PY
+unzip -l "$artifact_dir/Dev-Janitor_2.4.2_x64_portable.zip"
+dpkg-deb -I "$artifact_dir/"*.deb
+```

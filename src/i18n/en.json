@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Dev Janitor",
-        "version": "v2.4.1"
+        "version": "v2.4.2"
     },
     "nav": {
         "tools": "Tools",
@@ -161,10 +161,16 @@
             "cursor_ignore": "Cursor ignore file",
             "cursor_rules": "Cursor rules file",
             "copilot_cache": "GitHub Copilot cache",
+            "copilot_cli_session_state": "GitHub Copilot CLI session state",
+            "copilot_cli_session_store": "GitHub Copilot CLI session store",
             "codeium_cache": "Codeium AI cache",
             "tabnine_cache": "Tabnine AI cache",
             "codex_cache": "OpenAI Codex cache",
             "continue_cache": "Continue AI cache",
+            "goose_history": "Goose command history",
+            "goose_sessions": "Goose session records",
+            "goose_logs": "Goose logs",
+            "openhands_conversations": "OpenHands conversation history",
             "cline_cache": "Cline cache",
             "cline_history": "Cline history",
             "amazonq_cache": "Amazon Q cache",
@@ -354,6 +360,26 @@
             "opencode": {
                 "name": "OpenCode",
                 "description": "Terminal-based AI coding assistant with multi-provider support"
+            },
+            "goose": {
+                "name": "Goose CLI",
+                "description": "Local-first extensible AI agent with MCP support"
+            },
+            "openhands": {
+                "name": "OpenHands CLI",
+                "description": "Open-source software development agent with CLI and web modes"
+            },
+            "auggie": {
+                "name": "Auggie CLI",
+                "description": "Augment Code's terminal coding agent"
+            },
+            "kilo": {
+                "name": "Kilo Code CLI",
+                "description": "Kilo Code's terminal coding agent"
+            },
+            "junie": {
+                "name": "Junie CLI",
+                "description": "JetBrains' terminal coding agent"
             },
             "gemini": {
                 "name": "Gemini CLI",

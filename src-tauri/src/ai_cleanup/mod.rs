@@ -37,8 +37,17 @@ const AI_TOOL_PATTERNS: &[(&str, &str)] = &[
     // Claude output artifacts
     ("claude_output", "Claude output directory"),
     // Copilot
-    (".copilot", "GitHub Copilot cache"),
-    (".config/github-copilot", "GitHub Copilot config"),
+    (".copilot/session-state", "GitHub Copilot CLI session state"),
+    (
+        ".copilot/session-store.db",
+        "GitHub Copilot CLI session store",
+    ),
+    // Goose
+    (".config/goose/history.txt", "Goose command history"),
+    (".local/share/goose/sessions", "Goose session records"),
+    (".local/state/goose/logs", "Goose logs"),
+    // OpenHands
+    (".openhands/conversations", "OpenHands conversation history"),
     // Qwen Code
     (".qwen/.cache", "Qwen Code cache"),
     // Cline
@@ -340,73 +349,100 @@ fn validate_ai_junk_delete_target(path: &Path) -> Result<PathBuf, String> {
     }
 }
 
+fn make_junk_file(
+    id_prefix: &str,
+    path: &Path,
+    name: String,
+    size: u64,
+    junk_type: &str,
+    reason: String,
+) -> AiJunkFile {
+    AiJunkFile {
+        id: format!(
+            "{}_{}",
+            id_prefix,
+            path.to_string_lossy().replace(['\\', '/', ' '], "_")
+        ),
+        name,
+        path: path.to_string_lossy().to_string(),
+        size,
+        size_display: format_size(size),
+        junk_type: junk_type.to_string(),
+        reason,
+    }
+}
+
 fn scan_target(root: &Path, max_depth: usize) -> Vec<AiJunkFile> {
-    let entries: Vec<_> = WalkDir::new(root)
-        .max_depth(max_depth)
-        .into_iter()
-        .filter_entry(|e| !is_whitelisted(e.path()))
-        .filter_map(|e| e.ok())
-        .collect();
+    let mut junk_files = Vec::new();
+    let mut entries = WalkDir::new(root).max_depth(max_depth).into_iter();
 
-    entries
-        .par_iter()
-        .filter_map(|entry| {
-            let path = entry.path().to_path_buf();
+    while let Some(entry_result) = entries.next() {
+        let Ok(entry) = entry_result else {
+            continue;
+        };
+        let path = entry.path();
 
-            // Check AI tool patterns
-            if let Some((pattern, reason)) = check_ai_tool_pattern(&path) {
-                let size = get_size(&path);
-                return Some(AiJunkFile {
-                    id: format!(
-                        "ai_{}",
-                        path.to_string_lossy().replace(['\\', '/', ' '], "_")
-                    ),
-                    name: entry.file_name().to_string_lossy().to_string(),
-                    path: path.to_string_lossy().to_string(),
-                    size,
-                    size_display: format_size(size),
-                    junk_type: "ai_tool".to_string(),
-                    reason: format!("AI Tool: {} - {}", pattern, reason),
-                });
+        if is_whitelisted(path) {
+            if entry.file_type().is_dir() {
+                entries.skip_current_dir();
             }
+            continue;
+        }
 
-            // Check temp file patterns
-            if let Some((pattern, reason)) = check_temp_pattern(&path) {
-                let size = get_size(&path);
-                return Some(AiJunkFile {
-                    id: format!(
-                        "temp_{}",
-                        path.to_string_lossy().replace(['\\', '/', ' '], "_")
-                    ),
-                    name: entry.file_name().to_string_lossy().to_string(),
-                    path: path.to_string_lossy().to_string(),
-                    size,
-                    size_display: format_size(size),
-                    junk_type: "temp_file".to_string(),
-                    reason: format!("Temp: {} - {}", pattern, reason),
-                });
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        if let Some((pattern, reason)) = check_ai_tool_pattern(path) {
+            let path_buf = path.to_path_buf();
+            let size = get_size(&path_buf);
+            junk_files.push(make_junk_file(
+                "ai",
+                path,
+                name,
+                size,
+                "ai_tool",
+                format!("AI Tool: {} - {}", pattern, reason),
+            ));
+            if entry.file_type().is_dir() {
+                entries.skip_current_dir();
             }
+            continue;
+        }
 
-            // Check anomalous files
-            if let Some(reason) = check_anomalous(&path) {
-                let size = get_size(&path);
-                return Some(AiJunkFile {
-                    id: format!(
-                        "anomaly_{}",
-                        path.to_string_lossy().replace(['\\', '/', ' '], "_")
-                    ),
-                    name: entry.file_name().to_string_lossy().to_string(),
-                    path: path.to_string_lossy().to_string(),
-                    size,
-                    size_display: format_size(size),
-                    junk_type: "anomalous".to_string(),
-                    reason,
-                });
+        if let Some((pattern, reason)) = check_temp_pattern(path) {
+            let path_buf = path.to_path_buf();
+            let size = get_size(&path_buf);
+            junk_files.push(make_junk_file(
+                "temp",
+                path,
+                name,
+                size,
+                "temp_file",
+                format!("Temp: {} - {}", pattern, reason),
+            ));
+            if entry.file_type().is_dir() {
+                entries.skip_current_dir();
             }
+            continue;
+        }
 
-            None
-        })
-        .collect()
+        if let Some(reason) = check_anomalous(path) {
+            let path_buf = path.to_path_buf();
+            let size = get_size(&path_buf);
+            junk_files.push(make_junk_file(
+                "anomaly",
+                path,
+                name,
+                size,
+                "anomalous",
+                reason,
+            ));
+            if entry.file_type().is_dir() {
+                entries.skip_current_dir();
+            }
+        }
+    }
+
+    junk_files
 }
 
 /// Scan a directory for AI junk files
@@ -611,6 +647,11 @@ mod tests {
         fs::write(project.join(".claude/settings.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".codex")).unwrap();
         fs::write(project.join(".codex/config.toml"), "model = \"gpt-5.4\"\n").unwrap();
+        fs::create_dir_all(project.join(".copilot")).unwrap();
+        fs::write(project.join(".copilot/config.json"), "{}\n").unwrap();
+        fs::write(project.join(".copilot/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/github-copilot")).unwrap();
+        fs::write(project.join(".config/github-copilot/config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".cursor")).unwrap();
         fs::write(project.join(".cursor/cli-config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".continue")).unwrap();
@@ -630,6 +671,12 @@ mod tests {
         assert!(
             !result_paths.iter().any(|path| path.contains(".codex")),
             ".codex project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths
+                .iter()
+                .any(|path| path.contains(".copilot") || path.contains(".config/github-copilot")),
+            "GitHub Copilot configuration should not be treated as AI junk"
         );
         assert!(
             !result_paths.iter().any(|path| path.contains(".cursor")),
@@ -665,6 +712,18 @@ mod tests {
         fs::write(project.join(".crush/config.json"), "{}\n").unwrap();
         fs::create_dir_all(project.join(".amazonq")).unwrap();
         fs::write(project.join(".amazonq/mcp.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".augment")).unwrap();
+        fs::write(project.join(".augment/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/kilo")).unwrap();
+        fs::write(project.join(".config/kilo/opencode.jsonc"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".junie/mcp")).unwrap();
+        fs::write(project.join(".junie/AGENTS.md"), "project instructions\n").unwrap();
+        fs::write(project.join(".junie/mcp/mcp.json"), "{}\n").unwrap();
+        fs::write(project.join(".goosehints"), "project hints").unwrap();
+        fs::write(project.join("AGENT.md"), "project instructions").unwrap();
+        fs::create_dir_all(project.join(".openhands/hooks")).unwrap();
+        fs::write(project.join(".openhands/hooks.json"), "{}\n").unwrap();
+        fs::write(project.join(".openhands/setup.sh"), "#!/bin/sh\n").unwrap();
 
         let results = scan_ai_junk(project.to_str().unwrap(), 4);
         let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
@@ -689,6 +748,133 @@ mod tests {
             !result_paths.iter().any(|path| path.contains(".amazonq")),
             ".amazonq project settings should not be treated as AI junk"
         );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".augment")),
+            ".augment project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths
+                .iter()
+                .any(|path| path.contains(".config/kilo")),
+            ".config/kilo project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".junie")),
+            ".junie project settings should not be treated as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.contains(".goosehints")
+                || path.contains("AGENT.md")
+                || path.contains(".openhands/hooks")
+                || path.contains(".openhands/setup.sh")),
+            "Goose/OpenHands project instructions should not be treated as AI junk"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn detects_copilot_cli_session_targets_without_config_noise() {
+        let project = temp_project("copilot-cli-session");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".copilot")).unwrap();
+        fs::write(project.join(".copilot/config.json"), "{}\n").unwrap();
+        fs::write(project.join(".copilot/settings.json"), "{}\n").unwrap();
+        fs::create_dir_all(project.join(".config/github-copilot")).unwrap();
+        fs::write(project.join(".config/github-copilot/config.json"), "{}\n").unwrap();
+
+        let session_state = project.join(".copilot/session-state");
+        let session_store = project.join(".copilot/session-store.db");
+        fs::create_dir_all(&session_state).unwrap();
+        fs::write(session_state.join("events.jsonl"), "{}\n").unwrap();
+        fs::write(&session_store, "sqlite").unwrap();
+
+        let results = scan_ai_junk(project.to_str().unwrap(), 4);
+        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == session_state.to_string_lossy()),
+            "Copilot CLI session-state should be detected as AI junk"
+        );
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == session_store.to_string_lossy()),
+            "Copilot CLI session-store.db should be detected as AI junk"
+        );
+        assert!(
+            !result_paths.iter().any(|path| path.ends_with(".copilot")
+                || path.ends_with(".copilot/config.json")
+                || path.ends_with(".copilot/settings.json")
+                || path.contains(".config/github-copilot")),
+            "Copilot config directories and files should not be treated as AI junk"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn detects_goose_and_openhands_history_targets() {
+        let project = temp_project("goose-openhands-history");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        let goose_sessions = project.join(".local/share/goose/sessions");
+        let goose_logs = project.join(".local/state/goose/logs");
+        let openhands_conversations = project.join(".openhands/conversations");
+        fs::create_dir_all(&goose_sessions).unwrap();
+        fs::create_dir_all(&goose_logs).unwrap();
+        fs::create_dir_all(&openhands_conversations).unwrap();
+        fs::write(goose_sessions.join("sessions.db"), "sessions").unwrap();
+        fs::write(goose_logs.join("cli.log"), "logs").unwrap();
+        fs::write(openhands_conversations.join("conversation.json"), "{}\n").unwrap();
+
+        let results = scan_ai_junk(project.to_str().unwrap(), 6);
+        let result_paths: Vec<_> = results.iter().map(|file| file.path.as_str()).collect();
+
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == goose_sessions.to_string_lossy()),
+            "Goose session records should be detected as AI junk"
+        );
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == goose_logs.to_string_lossy()),
+            "Goose logs should be detected as AI junk"
+        );
+        assert!(
+            result_paths
+                .iter()
+                .any(|path| *path == openhands_conversations.to_string_lossy()),
+            "OpenHands conversation history should be detected as AI junk"
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn reports_matching_directory_once_without_descendant_duplicates() {
+        let project = temp_project("dedupe-dir");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        let history_dir = project.join(".cline/history");
+        fs::create_dir_all(&history_dir).unwrap();
+        fs::write(history_dir.join("session.tmp"), "temporary history").unwrap();
+
+        let results = scan_ai_junk(project.to_str().unwrap(), 4);
+        let matching_paths: Vec<_> = results
+            .iter()
+            .filter(|file| file.path.contains(".cline/history"))
+            .map(|file| file.path.as_str())
+            .collect();
+
+        assert_eq!(
+            matching_paths.len(),
+            1,
+            "a matched junk directory should be reported once without descendant duplicates"
+        );
+        assert_eq!(matching_paths[0], history_dir.to_string_lossy());
 
         fs::remove_dir_all(project).unwrap();
     }

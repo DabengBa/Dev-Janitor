@@ -26,20 +26,21 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 ### Cleanup
 
 - Scan project directories for common development artifacts such as `node_modules`, `target`, logs, caches, and temporary files.
-- Detect ephemeral leftovers from AI coding tools without flagging active project config files such as `.codex/config.toml` or `.claude/settings.json` as junk.
-- Review and remove AI chat history, cache, and debug files on a per-project basis.
+- Detect ephemeral leftovers from AI coding tools without flagging active project config files such as `.codex/config.toml`, `.claude/settings.json`, `.goosehints`, or `.junie/AGENTS.md` as junk.
+- Review and remove AI chat history, cache, session state, and debug files on a per-project basis.
+- Clean official GitHub Copilot CLI session targets without deleting the whole `.copilot` configuration directory.
 
 ### Tool Management
 
 - Inspect installed tools across Node, Python, Rust, Go, and related ecosystems.
 - Check versions and update common global packages.
-- Manage current AI CLI tools such as Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, GitHub Copilot CLI, Qwen Code, Cline, Amp, Crush, and Amazon Q Developer CLI from one interface.
+- Manage current AI CLI tools from one interface, including Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, Goose, OpenHands, Auggie, Kilo Code, Junie, GitHub Copilot CLI, Qwen Code, Cline, Amp, Crush, and Amazon Q Developer CLI.
 
 ### Security Scan
 
 - Check for risky local tool configurations and known vulnerable setups.
 - Flag ports that should usually listen on `localhost` only.
-- Detect API keys stored in common configuration files.
+- Detect API keys, GitHub tokens, and provider credentials stored in common configuration files.
 - Inspect MCP server configurations for patterns that can lead to credential exposure or SSRF.
 
 ### System Utilities
@@ -77,6 +78,8 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 </div>
 
 ## Installation
+
+The latest stable version is published from the `v*` tag release workflow after a preflight validation pass.
 
 ### Windows
 

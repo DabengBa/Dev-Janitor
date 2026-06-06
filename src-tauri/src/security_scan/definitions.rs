@@ -339,6 +339,139 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         },
 
         // =====================================
+        // Goose CLI - AAIF local-first agent
+        // =====================================
+        AiToolSecurityRule {
+            id: "goose".into(),
+            name: "Goose CLI".into(),
+            description: "Local-first extensible AI agent with MCP support".into(),
+            docs_url: "https://goose-docs.ai/docs/getting-started/installation".into(),
+            process_names: vec!["goose".into(), "goosed".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Goose Config".into(),
+                description: "Provider API keys, auth tokens, or MCP credentials stored in Goose files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-|api_key|apiKey|access_token|refresh_token|OPENAI_API_KEY|ANTHROPIC_API_KEY|GOOGLE_API_KEY|Authorization: Bearer".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use Goose's keyring-backed credential flow or environment-backed secrets instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".config/goose/".into(),
+                ".local/share/goose/".into(),
+                ".local/state/goose/".into(),
+            ],
+        },
+
+        // =====================================
+        // OpenHands CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "openhands".into(),
+            name: "OpenHands CLI".into(),
+            description: "Open-source software development agent with CLI and web modes".into(),
+            docs_url: "https://docs.openhands.dev/openhands/usage/cli/installation".into(),
+            process_names: vec!["openhands".into()],
+            ports: vec![PortRule {
+                port: 12000,
+                name: "OpenHands Web UI".into(),
+                description: "OpenHands web mode defaults to host 0.0.0.0 and should not be exposed without trusted network controls".into(),
+                risk_if_exposed: RiskLevel::High,
+                safe_bindings: vec!["127.0.0.1".into(), "localhost".into(), "::1".into()],
+            }],
+            configs: vec![ConfigRule {
+                name: "Provider Key in OpenHands Config".into(),
+                description: "Provider API keys, auth tokens, or MCP headers stored in OpenHands files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "sk-|api_key|apiKey|access_token|refresh_token|OPENAI_API_KEY|ANTHROPIC_API_KEY|LLM_API_KEY|Authorization: Bearer".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use OpenHands secrets/settings flows or environment-backed secret storage instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".openhands/".into(),
+            ],
+        },
+
+        // =====================================
+        // Auggie CLI - Augment Code
+        // =====================================
+        AiToolSecurityRule {
+            id: "auggie".into(),
+            name: "Auggie CLI".into(),
+            description: "Augment Code's terminal coding agent".into(),
+            docs_url: "https://docs.augmentcode.com/cli/overview".into(),
+            process_names: vec!["auggie".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Token in Auggie Config".into(),
+                description: "Augment auth tokens, GitHub tokens, or provider keys stored in Auggie files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "AUGMENT_SESSION_AUTH|GITHUB_API_TOKEN|github_pat_|ghp_|sk-|api_key|apiKey|access_token|Authorization: Bearer".into(),
+                },
+                risk_level: RiskLevel::High,
+                remediation: "Use Auggie's login flow or environment-backed secret storage instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".augment/".into(),
+            ],
+        },
+
+        // =====================================
+        // Kilo Code CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "kilo".into(),
+            name: "Kilo Code CLI".into(),
+            description: "Kilo Code's terminal coding agent".into(),
+            docs_url: "https://kilo.ai/docs/code-with-ai/platforms/cli".into(),
+            process_names: vec!["kilo".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Kilo Config".into(),
+                description: "Provider API keys or auth tokens stored in Kilo config files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "KILO_API_KEY|KILOCODE_|OPENAI_API_KEY|ANTHROPIC_API_KEY|sk-|api_key|apiKey|access_token|Authorization: Bearer".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Keep provider keys in environment variables or secret storage instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".config/kilo/".into(),
+            ],
+        },
+
+        // =====================================
+        // Junie CLI - JetBrains
+        // =====================================
+        AiToolSecurityRule {
+            id: "junie".into(),
+            name: "Junie CLI".into(),
+            description: "JetBrains' terminal coding agent".into(),
+            docs_url: "https://junie.jetbrains.com/docs/junie-cli.html".into(),
+            process_names: vec!["junie".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Junie Config".into(),
+                description: "Junie BYOK tokens or provider API keys stored in Junie files".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "JUNIE_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|GOOGLE_API_KEY|sk-|api_key|apiKey|access_token|Authorization: Bearer".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use JUNIE_API_KEY or provider environment variables instead of plaintext config values".into(),
+            }],
+            config_paths: vec![
+                ".junie/".into(),
+            ],
+        },
+
+        // =====================================
         // Continue.dev - VS Code AI extension with local server
         // =====================================
         AiToolSecurityRule {
@@ -686,7 +819,20 @@ mod tests {
             .map(|rule| rule.id)
             .collect();
         for id in [
-            "claude", "codex", "gemini", "copilot", "qwen", "cline", "amp", "crush", "amazonq",
+            "claude",
+            "codex",
+            "goose",
+            "openhands",
+            "auggie",
+            "kilo",
+            "junie",
+            "gemini",
+            "copilot",
+            "qwen",
+            "cline",
+            "amp",
+            "crush",
+            "amazonq",
         ] {
             assert!(
                 ids.contains(&id.to_string()),
