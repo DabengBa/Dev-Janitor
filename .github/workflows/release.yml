@@ -47,18 +47,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Validate release tag and version fields
-        run: |
-          set -euo pipefail
-          tag="${RELEASE_TAG}"
-          version="${tag#v}"
-
-          test "$tag" != "$version"
-          test "$(node -p "require('./package.json').version")" = "$version"
-          test "$(node -p "require('./src-tauri/tauri.conf.json').version")" = "$version"
-          grep -q "^version = \"$version\"$" src-tauri/Cargo.toml
-          grep -q "\"version\": \"v$version\"" src/i18n/en.json
-          grep -q "\"version\": \"v$version\"" src/i18n/zh.json
-          grep -q "## \\[$version\\]" CHANGELOG.md
+        run: pnpm validate:release -- --tag "${RELEASE_TAG}"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9

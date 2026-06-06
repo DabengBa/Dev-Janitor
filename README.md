@@ -124,6 +124,7 @@ pnpm tauri dev
 
 ```bash
 pnpm lint
+pnpm validate:release
 pnpm build
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml

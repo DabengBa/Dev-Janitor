@@ -31,6 +31,7 @@ Run the relevant checks before opening a pull request:
 
 ```bash
 pnpm lint
+pnpm validate:release
 pnpm build
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml

@@ -111,6 +111,7 @@ Before tagging:
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm lint
+corepack pnpm validate:release
 corepack pnpm build
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml
