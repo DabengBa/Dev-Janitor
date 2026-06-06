@@ -149,6 +149,7 @@ artifact_dir=/tmp/dev-janitor-v2.4.2
 rm -rf "$artifact_dir"
 mkdir -p "$artifact_dir"
 gh release download v2.4.2 --dir "$artifact_dir"
+corepack pnpm validate:artifacts -- --dir "$artifact_dir" --version 2.4.2
 find "$artifact_dir" -maxdepth 1 -type f -printf '%f\n' | sort
 sha256sum "$artifact_dir"/*
 file "$artifact_dir"/*

@@ -25,6 +25,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "validate:release": "node scripts/validate-release-version.mjs",
+    "validate:artifacts": "node scripts/validate-release-artifacts.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
