@@ -4,14 +4,14 @@ This document records the repository release line, GitHub tag state, and Actions
 
 ## Current Release State
 
-- Latest published release: `v2.4.1`
-- Published at: `2026-06-02T05:05:45Z`
-- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.1
+- Latest published release: `v2.4.2`
+- Published at: `2026-06-06T11:23:11Z`
+- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.2
 - Published asset count: 22
-- Current app version in this checkout: `2.4.2` (unpublished release candidate)
+- Current app version in this checkout: `2.4.2`
 - Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
 
-The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05, and no draft releases were found after cleanup.
+The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05. During the `v2.4.2` publish, the first tag run created an empty draft release before a Windows CI test failure was fixed; that draft was deleted before the tag was moved to the fixed commit and the final release was published.
 
 ## Version Tags
 
@@ -19,6 +19,7 @@ Recent v2 tags from the local repository after `git fetch --all --tags --prune`:
 
 | Tag | Date | Commit | Subject |
 | --- | --- | --- | --- |
+| `v2.4.2` | 2026-06-06 | `2b9685e` | fix: make AI cleanup tests portable on Windows |
 | `v2.4.1` | 2026-06-02 | `ddfa6b1` | Dev Janitor v2.4.1 |
 | `v2.4.0` | 2026-06-02 | `21990c0` | Dev Janitor v2.4.0 |
 | `v2.3.7` | 2026-05-05 | `e931153` | Dev Janitor v2.3.7 |
@@ -58,10 +59,19 @@ gh release list --limit 50
 
 ## Recent GitHub Actions History
 
-Recent workflow runs reviewed on 2026-06-02:
+Recent workflow runs reviewed on 2026-06-06:
 
 | Run | Created | Workflow | Result | Branch/tag | Commit | Title |
 | --- | --- | --- | --- | --- | --- | --- |
+| `27060734403` | 2026-06-06T11:12:38Z | Release | success | `v2.4.2` | `2b9685e` | fix: make AI cleanup tests portable on Windows |
+| `27060715941` | 2026-06-06T11:11:45Z | CI | success | `main` | `2b9685e` | fix: make AI cleanup tests portable on Windows |
+| `27060229556` | 2026-06-06T10:48:06Z | Release | cancelled | `v2.4.2` | `3cbcffa` | release: v2.4.2 |
+| `27060226770` | 2026-06-06T10:47:57Z | CI | failure | `main` | `3cbcffa` | release: v2.4.2 |
+| `27019662876` | 2026-06-05T14:06:35Z | CI | success | `main` | `42b868d` | docs: refresh release maintenance state |
+| `26799354343` | 2026-06-02T04:57:15Z | Release | success | `v2.4.1` | `284a556` | release: v2.4.1 |
+| `26799353770` | 2026-06-02T04:57:13Z | CI | success | `main` | `284a556` | release: v2.4.1 |
+| `26795628941` | 2026-06-02T03:00:45Z | Release | success | `v2.4.0` | `9856a54` | release: v2.4.0 |
+| `26795616629` | 2026-06-02T03:00:24Z | CI | success | `main` | `9856a54` | release: v2.4.0 |
 | `25360531320` | 2026-05-05T06:02:37Z | CI | success | `main` | `3fa87c6` | fix Windows clippy lint |
 | `25360073283` | 2026-05-05T05:47:24Z | Release | success | `v2.3.7` | `58b6171` | align Tauri JS packages for release |
 | `25360068703` | 2026-05-05T05:47:14Z | CI | failure | `main` | `58b6171` | align Tauri JS packages for release |
@@ -82,6 +92,9 @@ Failure causes observed from `gh run view --log-failed`:
 - `25360068703` failed on Windows Clippy because Rust 1.94 flagged a `needless_return` in `src-tauri/src/config/mod.rs`.
 - `25360073283` then published `v2.3.7` successfully after Tauri package alignment.
 - `25360531320` then made `main` green after the Windows Clippy fix.
+- `27060226770` failed on Windows tests because new path assertions used POSIX separators and one Goose install-command assertion did not account for the Windows manual-install path.
+- `27060229556` was cancelled after preflight/create-release because it was building the failed `3cbcffa` commit. The empty draft release was deleted, then `v2.4.2` was moved to `2b9685e`.
+- `27060715941` and `27060734403` then completed successfully for the fixed `v2.4.2` release.
 
 Useful commands:
 
@@ -136,8 +149,8 @@ gh release download v2.4.2 --dir "$artifact_dir"
 find "$artifact_dir" -maxdepth 1 -type f -printf '%f\n' | sort
 sha256sum "$artifact_dir"/*
 file "$artifact_dir"/*
-python -m json.tool "$artifact_dir/latest.json" >/dev/null
-python - <<'PY'
+python3 -m json.tool "$artifact_dir/latest.json" >/dev/null
+python3 - <<'PY'
 import json
 from pathlib import Path
 
@@ -148,3 +161,21 @@ PY
 unzip -l "$artifact_dir/Dev-Janitor_2.4.2_x64_portable.zip"
 dpkg-deb -I "$artifact_dir/"*.deb
 ```
+
+## v2.4.2 Artifact Validation
+
+The `v2.4.2` artifacts were downloaded to `/tmp/dev-janitor-v2.4.2` after the release was published.
+
+Validation completed on 2026-06-06:
+
+- Confirmed 22 release assets were present and non-empty.
+- Confirmed `latest.json` parses as JSON, reports version `2.4.2`, and includes 11 updater platform entries.
+- Generated SHA-256 hashes for every downloaded asset.
+- Verified the Windows portable ZIP with `unzip -t`; contents were `.portable`, `dev-janitor-v2.exe`, and `README.txt`.
+- Confirmed Windows NSIS setup EXE and localized MSI packages are recognizable installer formats with `file` and `7z`.
+- Confirmed macOS x64/aarch64 DMGs contain `Dev Janitor.app`, `Info.plist`, icon resources, and the app binary.
+- Confirmed macOS x64/aarch64 `.app.tar.gz` files pass gzip/tar integrity checks and contain `Info.plist`, icon resources, and the app binary.
+- Confirmed the Debian package metadata reports `Package: dev-janitor`, `Version: 2.4.2`, `Architecture: amd64`, and includes `/usr/bin/dev-janitor-v2`.
+- Confirmed the RPM payload contains `/usr/bin/dev-janitor-v2`, the desktop file, and app icons.
+- Confirmed the AppImage is an x86-64 ELF AppImage, contains a valid SquashFS payload, and extracts `AppRun` plus `usr/bin/dev-janitor-v2`.
+- Confirmed all `.sig` files are present and non-empty.
