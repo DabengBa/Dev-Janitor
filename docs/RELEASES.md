@@ -4,14 +4,15 @@ This document records the repository release line, GitHub tag state, and Actions
 
 ## Current Release State
 
-- Latest published release: `v2.4.2`
-- Published at: `2026-06-06T11:23:11Z`
-- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.2
+- Latest published release: `v2.4.3`
+- Published at: `2026-06-08T02:51:54Z`
+- Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.3
 - Published asset count: 22
-- Current app version in this checkout: `2.4.2`
+- Current app version in this checkout: `2.4.3`
 - Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
 
 The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05. During the `v2.4.2` publish, the first tag run created an empty draft release before a Windows CI test failure was fixed; that draft was deleted before the tag was moved to the fixed commit and the final release was published.
+The `v2.4.3` publish completed successfully on the first tag run after hardening cache cleanup target validation.
 
 ## Version Tags
 
@@ -19,6 +20,7 @@ Recent v2 tags from the local repository after `git fetch --all --tags --prune`:
 
 | Tag | Date | Commit | Subject |
 | --- | --- | --- | --- |
+| `v2.4.3` | 2026-06-08 | `c8a2983` | fix: harden cache cleanup targets |
 | `v2.4.2` | 2026-06-06 | `2b9685e` | fix: make AI cleanup tests portable on Windows |
 | `v2.4.1` | 2026-06-02 | `ddfa6b1` | Dev Janitor v2.4.1 |
 | `v2.4.0` | 2026-06-02 | `21990c0` | Dev Janitor v2.4.0 |
@@ -59,10 +61,16 @@ gh release list --limit 50
 
 ## Recent GitHub Actions History
 
-Recent workflow runs reviewed on 2026-06-06:
+Recent workflow runs reviewed on 2026-06-08:
 
 | Run | Created | Workflow | Result | Branch/tag | Commit | Title |
 | --- | --- | --- | --- | --- | --- | --- |
+| `27112913909` | 2026-06-08T02:39:04Z | Release | success | `v2.4.3` | `c8a2983` | fix: harden cache cleanup targets |
+| `27112906682` | 2026-06-08T02:38:47Z | CI | success | `main` | `c8a2983` | fix: harden cache cleanup targets |
+| `27062356326` | 2026-06-06T12:30:50Z | CI | success | `main` | `5c5eaff` | tools: validate release artifacts |
+| `27062074009` | 2026-06-06T12:17:25Z | CI | success | `main` | `703c0eb` | ci: pin migrated Windows runner |
+| `27061869156` | 2026-06-06T12:07:39Z | CI | success | `main` | `5ac7506` | ci: share release version validation |
+| `27061228310` | 2026-06-06T11:36:36Z | CI | success | `main` | `d39d943` | docs: record v2.4.2 release validation |
 | `27060734403` | 2026-06-06T11:12:38Z | Release | success | `v2.4.2` | `2b9685e` | fix: make AI cleanup tests portable on Windows |
 | `27060715941` | 2026-06-06T11:11:45Z | CI | success | `main` | `2b9685e` | fix: make AI cleanup tests portable on Windows |
 | `27060229556` | 2026-06-06T10:48:06Z | Release | cancelled | `v2.4.2` | `3cbcffa` | release: v2.4.2 |
@@ -101,7 +109,7 @@ Useful commands:
 ```bash
 gh run list --limit 50 --json databaseId,displayTitle,workflowName,event,status,conclusion,headBranch,headSha,createdAt,updatedAt,url
 gh run view <run-id> --log-failed
-gh release view v2.3.7 --json tagName,name,isDraft,isPrerelease,publishedAt,createdAt,url,assets
+gh release view v2.4.3 --json tagName,name,isDraft,isPrerelease,publishedAt,createdAt,url,assets
 ```
 
 ## Release Checklist
@@ -145,11 +153,11 @@ After a successful release:
 Download and inspect the published artifacts locally:
 
 ```bash
-artifact_dir=/tmp/dev-janitor-v2.4.2
+artifact_dir=/tmp/dev-janitor-v2.4.3
 rm -rf "$artifact_dir"
 mkdir -p "$artifact_dir"
-gh release download v2.4.2 --dir "$artifact_dir"
-corepack pnpm validate:artifacts -- --dir "$artifact_dir" --version 2.4.2
+gh release download v2.4.3 --dir "$artifact_dir"
+corepack pnpm validate:artifacts -- --dir "$artifact_dir" --version 2.4.3
 find "$artifact_dir" -maxdepth 1 -type f -printf '%f\n' | sort
 sha256sum "$artifact_dir"/*
 file "$artifact_dir"/*
@@ -158,13 +166,25 @@ python3 - <<'PY'
 import json
 from pathlib import Path
 
-data = json.loads(Path("/tmp/dev-janitor-v2.4.2/latest.json").read_text())
-assert data["version"] == "2.4.2", data
+data = json.loads(Path("/tmp/dev-janitor-v2.4.3/latest.json").read_text())
+assert data["version"] == "2.4.3", data
 assert data["platforms"], data
 PY
-unzip -l "$artifact_dir/Dev-Janitor_2.4.2_x64_portable.zip"
+unzip -l "$artifact_dir/Dev-Janitor_2.4.3_x64_portable.zip"
 dpkg-deb -I "$artifact_dir/"*.deb
 ```
+
+## v2.4.3 Artifact Validation
+
+The `v2.4.3` artifacts were downloaded to `/tmp/dev-janitor-v2.4.3` after the release was published.
+
+Validation completed on 2026-06-08:
+
+- Confirmed the Release workflow run `27112913909` completed successfully for tag `v2.4.3`, including preflight, create-release, four platform build jobs, and publish-release.
+- Confirmed the CI workflow run `27112906682` completed successfully for `main` at `c8a2983`.
+- Confirmed the GitHub release is published, not draft, not prerelease, and has 22 uploaded assets.
+- Confirmed `latest.json` exists and the repository artifact validator passed: `Release artifact validation passed for v2.4.3: 22 files in /tmp/dev-janitor-v2.4.3`.
+- Confirmed Windows `.msi`, `.exe`, portable ZIP, macOS `.dmg` and `.app.tar.gz`, Linux AppImage, `.deb`, `.rpm`, all expected signatures, and updater `latest.json` are present.
 
 ## v2.4.2 Artifact Validation
 
