@@ -37,148 +37,135 @@ pub fn format_size(bytes: u64) -> String {
 }
 
 /// Calculate directory size recursively
-pub fn get_dir_size(path: &PathBuf) -> u64 {
+pub fn get_dir_size(path: &Path) -> u64 {
     WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
         .filter_map(|e| e.metadata().ok())
-        .filter(|m| m.is_file())
-        .map(|m| m.len())
+        .map(|metadata| metadata.len())
         .sum()
+}
+
+fn env_path(name: &str) -> Option<PathBuf> {
+    std::env::var_os(name)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+fn push_join(paths: &mut Vec<PathBuf>, base: &Option<PathBuf>, relative: &str) {
+    if let Some(base) = base {
+        paths.push(base.join(relative));
+    }
 }
 
 /// Get package manager cache paths
 fn get_package_manager_caches() -> Vec<(&'static str, &'static str, Vec<PathBuf>)> {
-    use std::env;
-
-    let home = env::var("HOME")
-        .or_else(|_| env::var("USERPROFILE"))
-        .unwrap_or_default();
-    let local_app_data = env::var("LOCALAPPDATA").unwrap_or_default();
-    let app_data = env::var("APPDATA").unwrap_or_default();
+    let home = user_home_dir();
+    let local_app_data = env_path("LOCALAPPDATA");
+    let app_data = env_path("APPDATA");
 
     vec![
         // npm
-        (
-            "npm",
-            "npm Cache",
-            vec![
-                PathBuf::from(format!("{}/.npm", home)),
-                PathBuf::from(format!("{}/npm-cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".npm");
+            push_join(&mut paths, &local_app_data, "npm-cache");
+            ("npm", "npm Cache", paths)
+        },
         // yarn
-        (
-            "yarn",
-            "Yarn Cache",
-            vec![
-                PathBuf::from(format!("{}/.yarn/cache", home)),
-                PathBuf::from(format!("{}/Yarn/Cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".yarn/cache");
+            push_join(&mut paths, &local_app_data, "Yarn/Cache");
+            ("yarn", "Yarn Cache", paths)
+        },
         // pnpm
-        (
-            "pnpm",
-            "pnpm Cache",
-            vec![
-                PathBuf::from(format!("{}/.pnpm-store", home)),
-                PathBuf::from(format!("{}/pnpm/store", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".pnpm-store");
+            push_join(&mut paths, &local_app_data, "pnpm/store");
+            ("pnpm", "pnpm Cache", paths)
+        },
         // pip
-        (
-            "pip",
-            "pip Cache",
-            vec![
-                PathBuf::from(format!("{}/.cache/pip", home)),
-                PathBuf::from(format!("{}/pip/Cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".cache/pip");
+            push_join(&mut paths, &local_app_data, "pip/Cache");
+            ("pip", "pip Cache", paths)
+        },
         // conda
-        (
-            "conda",
-            "Conda Cache",
-            vec![
-                PathBuf::from(format!("{}/.conda/pkgs", home)),
-                PathBuf::from(format!("{}/conda/conda/pkgs", app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".conda/pkgs");
+            push_join(&mut paths, &app_data, "conda/conda/pkgs");
+            ("conda", "Conda Cache", paths)
+        },
         // cargo
-        (
-            "cargo",
-            "Cargo Cache",
-            vec![PathBuf::from(format!("{}/.cargo/registry/cache", home))],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".cargo/registry/cache");
+            ("cargo", "Cargo Cache", paths)
+        },
         // composer
-        (
-            "composer",
-            "Composer Cache",
-            vec![
-                PathBuf::from(format!("{}/.composer/cache", home)),
-                PathBuf::from(format!("{}/Composer/cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".composer/cache");
+            push_join(&mut paths, &local_app_data, "Composer/cache");
+            ("composer", "Composer Cache", paths)
+        },
         // maven
-        (
-            "maven",
-            "Maven Cache",
-            vec![PathBuf::from(format!("{}/.m2/repository", home))],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".m2/repository");
+            ("maven", "Maven Cache", paths)
+        },
         // gradle
-        (
-            "gradle",
-            "Gradle Cache",
-            vec![PathBuf::from(format!("{}/.gradle/caches", home))],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".gradle/caches");
+            ("gradle", "Gradle Cache", paths)
+        },
         // homebrew (macOS)
-        (
-            "homebrew",
-            "Homebrew Cache",
-            vec![PathBuf::from(format!("{}/Library/Caches/Homebrew", home))],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, "Library/Caches/Homebrew");
+            ("homebrew", "Homebrew Cache", paths)
+        },
         // go modules
-        (
-            "go",
-            "Go Modules Cache",
-            vec![PathBuf::from(format!("{}/go/pkg/mod/cache", home))],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, "go/pkg/mod/cache");
+            ("go", "Go Modules Cache", paths)
+        },
         // uv (Python)
-        (
-            "uv",
-            "uv Cache",
-            vec![
-                PathBuf::from(format!("{}/.cache/uv", home)),
-                PathBuf::from(format!("{}/Library/Caches/uv", home)),
-                PathBuf::from(format!("{}/uv/cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".cache/uv");
+            push_join(&mut paths, &home, "Library/Caches/uv");
+            push_join(&mut paths, &local_app_data, "uv/cache");
+            ("uv", "uv Cache", paths)
+        },
         // bun
-        (
-            "bun",
-            "Bun Cache",
-            vec![
-                PathBuf::from(format!("{}/.bun/install/cache", home)),
-                PathBuf::from(format!("{}/bun/install/cache", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".bun/install/cache");
+            push_join(&mut paths, &local_app_data, "bun/install/cache");
+            ("bun", "Bun Cache", paths)
+        },
         // deno
-        (
-            "deno",
-            "Deno Cache",
-            vec![
-                PathBuf::from(format!("{}/.cache/deno", home)),
-                PathBuf::from(format!("{}/Library/Caches/deno", home)),
-                PathBuf::from(format!("{}/deno", local_app_data)),
-            ],
-        ),
+        {
+            let mut paths = Vec::new();
+            push_join(&mut paths, &home, ".cache/deno");
+            push_join(&mut paths, &home, "Library/Caches/deno");
+            push_join(&mut paths, &local_app_data, "deno");
+            ("deno", "Deno Cache", paths)
+        },
     ]
 }
 
 fn user_home_dir() -> Option<PathBuf> {
-    std::env::var("HOME")
-        .or_else(|_| std::env::var("USERPROFILE"))
-        .ok()
-        .map(PathBuf::from)
+    env_path("HOME").or_else(|| env_path("USERPROFILE"))
 }
 
 fn canonicalize_existing_path(path: &Path) -> Result<PathBuf, String> {
@@ -206,6 +193,13 @@ fn is_root_or_home_path(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+fn is_system_temp_dir(path: &Path) -> bool {
+    std::env::temp_dir()
+        .canonicalize()
+        .map(|temp_dir| temp_dir == path)
+        .unwrap_or(false)
+}
+
 fn is_known_package_manager_cache(path: &Path) -> bool {
     get_package_manager_caches()
         .into_iter()
@@ -225,6 +219,41 @@ fn is_known_project_cache(path: &Path) -> bool {
                     .any(|(pattern, _)| name == *pattern)
             })
             .unwrap_or(false)
+        && has_dev_project_ancestor(path)
+}
+
+const DEV_PROJECT_INDICATORS: &[&str] = &[
+    "package.json",
+    "Cargo.toml",
+    "pyproject.toml",
+    "requirements.txt",
+    "go.mod",
+    "pom.xml",
+    "build.gradle",
+    "composer.json",
+    "Gemfile",
+    ".git",
+];
+
+fn has_dev_project_ancestor(path: &Path) -> bool {
+    for ancestor in path.ancestors().skip(1) {
+        if is_root_or_home_path(ancestor) {
+            break;
+        }
+
+        if is_system_temp_dir(ancestor) {
+            continue;
+        }
+
+        if DEV_PROJECT_INDICATORS
+            .iter()
+            .any(|indicator| ancestor.join(indicator).exists())
+        {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn validate_cache_cleanup_target(path: &Path) -> Result<PathBuf, String> {
@@ -305,16 +334,18 @@ pub fn scan_project_caches(root_path: &str, max_depth: usize) -> Vec<CacheInfo> 
 
     let mut caches = Vec::new();
 
-    for entry in WalkDir::new(&root)
-        .max_depth(max_depth)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    let mut entries = WalkDir::new(&root).max_depth(max_depth).into_iter();
+
+    while let Some(entry_result) = entries.next() {
+        let Ok(entry) = entry_result else {
+            continue;
+        };
+
         if entry.file_type().is_dir() {
             let dir_name = entry.file_name().to_string_lossy();
 
             for (pattern, name) in PROJECT_CACHE_PATTERNS {
-                if dir_name == *pattern {
+                if dir_name == *pattern && has_dev_project_ancestor(entry.path()) {
                     let path = entry.path().to_path_buf();
                     let size = get_dir_size(&path);
 
@@ -329,6 +360,9 @@ pub fn scan_project_caches(root_path: &str, max_depth: usize) -> Vec<CacheInfo> 
                             cache_type: "project".to_string(),
                         });
                     }
+
+                    entries.skip_current_dir();
+                    break;
                 }
             }
         }
@@ -398,4 +432,88 @@ fn remove_readonly_and_delete(path: &PathBuf) -> std::io::Result<()> {
     }
 
     fs::remove_dir_all(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_project(name: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("dev-janitor-cache-{name}-{nanos}"));
+        fs::create_dir_all(&dir).expect("temp directory should be created");
+        dir
+    }
+
+    fn write_large_file(path: &Path) {
+        fs::write(path, vec![b'x'; 1024 * 1024 + 1]).expect("test file should be written");
+    }
+
+    #[test]
+    fn project_cache_scan_reports_matched_directory_once() {
+        let project = temp_project("dedupe");
+        fs::write(project.join("package.json"), "{}\n").unwrap();
+        let nested_cache = project.join("node_modules/nested/node_modules");
+        fs::create_dir_all(&nested_cache).unwrap();
+        write_large_file(&nested_cache.join("payload.bin"));
+
+        let results = scan_project_caches(project.to_str().unwrap(), 8);
+        let node_modules_matches: Vec<_> = results
+            .iter()
+            .filter(|cache| cache.path.contains("node_modules"))
+            .collect();
+
+        assert_eq!(
+            node_modules_matches.len(),
+            1,
+            "matched cache directories should be pruned to avoid descendant duplicates"
+        );
+        assert_eq!(
+            PathBuf::from(&node_modules_matches[0].path),
+            project.join("node_modules")
+        );
+
+        fs::remove_dir_all(project).unwrap();
+    }
+
+    #[test]
+    fn refuses_project_cache_without_project_marker() {
+        let root = temp_project("orphan");
+        let cache = root.join("build");
+        fs::create_dir_all(&cache).unwrap();
+        write_large_file(&cache.join("payload.bin"));
+
+        let result = clean_cache(cache.to_str().unwrap());
+
+        assert!(result
+            .expect_err("orphan project cache name should not be enough to delete")
+            .contains("not a recognized cache target"));
+        assert!(cache.exists());
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn cleans_project_cache_inside_dev_project() {
+        let project = temp_project("clean-project");
+        fs::write(
+            project.join("Cargo.toml"),
+            "[package]\nname = \"fixture\"\n",
+        )
+        .unwrap();
+        let cache = project.join("target");
+        fs::create_dir_all(&cache).unwrap();
+        write_large_file(&cache.join("payload.bin"));
+
+        let result = clean_cache(cache.to_str().unwrap()).expect("project cache should clean");
+
+        assert!(result.contains("Successfully cleaned"));
+        assert!(!cache.exists());
+
+        fs::remove_dir_all(project).unwrap();
+    }
 }

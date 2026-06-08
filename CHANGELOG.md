@@ -7,6 +7,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
+## [2.4.3] - 2026-06-08
+
+### Cache Cleanup Hardening | 缓存清理加固
+
+- Build package-manager cache paths only from available system directories, avoiding root-level fallback candidates when environment variables such as `HOME`, `LOCALAPPDATA`, or `APPDATA` are missing.
+  仅基于可用的系统目录构造包管理器缓存路径，避免 `HOME`、`LOCALAPPDATA` 或 `APPDATA` 缺失时生成根目录级候选路径。
+- Require project cache cleanup targets to live below a detected development project, so generic directories named `build`, `dist`, or `target` are not enough to authorize deletion.
+  要求项目缓存清理目标位于已识别的开发项目下，避免仅凭 `build`、`dist` 或 `target` 等通用目录名授权删除。
+- Prune matched project cache directories during scans to avoid reporting nested duplicate cache targets.
+  项目缓存扫描命中缓存目录后会剪枝，避免重复列出嵌套缓存目标。
+- Set the app, bundle, crate, and localized display versions to `v2.4.3` for this patch release.
+  将应用、安装包、Rust crate 和本地化显示版本同步为本次补丁发布的 `v2.4.3`。
+
+---
+
 ## [2.4.2] - 2026-06-06
 
 ### AI Tool Coverage & Scan Hardening | AI 工具覆盖与扫描加固
