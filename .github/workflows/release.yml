@@ -21,8 +21,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 24
-  PNPM_VERSION: 11.5.0
-  RUST_TOOLCHAIN: 1.95.0
+  PNPM_VERSION: 11.15.1
+  RUST_TOOLCHAIN: 1.97.1
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 jobs:
@@ -48,6 +48,9 @@ jobs:
 
       - name: Validate release tag and version fields
         run: pnpm validate:release -- --tag "${RELEASE_TAG}"
+
+      - name: Validate AI CLI catalog
+        run: pnpm validate:ai-catalog
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9

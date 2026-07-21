@@ -4,7 +4,7 @@ version = "2.5.0"
 description = "Cross-platform desktop application for cleaning development artifacts and managing local developer tools"
 authors = ["cocojojo5213"]
 edition = "2021"
-rust-version = "1.95"
+rust-version = "1.97"
 license = "MIT"
 repository = "https://github.com/cocojojo5213/Dev-Janitor"
 homepage = "https://github.com/cocojojo5213/Dev-Janitor"
@@ -60,7 +60,7 @@ which = "8"
 thiserror = "2"
 
 # Hash generation
-md5 = "0.7"
+md5 = "0.8"
 
 # Date/time formatting
 chrono = "0.4"

@@ -13,6 +13,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ## [2.5.0] - 2026-07-21
 
+### AI CLI Ecosystem | AI CLI 生态
+
+- Refresh the AI CLI matrix against current official sources, adding Factory Droid, Mistral Vibe, Qoder CLI, and Pi Coding Agent while correcting Claude, OpenCode, Cody, and Amazon Q lifecycle guidance.
+  按当前官方资料刷新 AI CLI 矩阵，新增 Factory Droid、Mistral Vibe、Qoder CLI 和 Pi Coding Agent，并修正 Claude、OpenCode、Cody 与 Amazon Q 的生命周期指引。
+- Mark legacy Amazon Q installations and provide a direct Kiro migration path instead of presenting obsolete install and uninstall actions as current support.
+  标记旧版 Amazon Q 安装，并提供直接迁移到 Kiro 的路径，不再把过时的安装和卸载动作当作当前支持。
+- Add a maintained AI CLI catalog with local metadata drift checks and a weekly official documentation/registry audit.
+  增加可维护的 AI CLI 目录、本地元数据漂移检查，以及每周官方文档和 registry 审计。
+
+### Runtime Responsiveness | 运行时响应
+
+- Move filesystem scans, process queries, package operations, security checks, and CLI lifecycle actions to Tauri blocking workers so the UI thread stays responsive.
+  将文件扫描、进程查询、包管理、安全检查和 CLI 生命周期动作移到 Tauri blocking worker，保持界面线程响应。
+- Probe AI CLI installations in parallel and avoid rescanning every tool before a single install, update, or uninstall action.
+  并行探测 AI CLI 安装状态，并避免在单个安装、更新或卸载动作前重复扫描全部工具。
+
+### Dependencies & Hygiene | 依赖与整理
+
+- Update the Node, pnpm, Rust, Tauri, Vite, TypeScript, and related dependency baselines, and remove unused template assets and Radix packages.
+  更新 Node、pnpm、Rust、Tauri、Vite、TypeScript 及相关依赖基线，并删除未使用的模板资源和 Radix 包。
+
 ### Updates & Delivery | 更新与交付
 
 - Show the installed app version in Settings and the sidebar, add manual update checks with clear status and download progress, and automatically relaunch after a signed update is installed.

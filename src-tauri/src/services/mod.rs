@@ -114,6 +114,10 @@ const DEV_PROCESS_PATTERNS: &[(&str, &str)] = &[
     ("cline", "AI Tool"),
     ("amp", "AI Tool"),
     ("crush", "AI Tool"),
+    ("droid", "AI Tool"),
+    ("vibe", "AI Tool"),
+    ("qodercli", "AI Tool"),
+    ("pi", "AI Tool"),
     ("amazonq", "AI Tool"),
     ("amazon-q", "AI Tool"),
     // Version Control

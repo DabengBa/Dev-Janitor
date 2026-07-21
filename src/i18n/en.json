@@ -339,6 +339,7 @@
         "confirm_uninstall": "Uninstall {{name}}?",
         "success_install": "Installed {{name}}",
         "success_update": "Updated {{name}}",
+        "success_migrate": "Migrated {{name}} to its supported successor",
         "success_uninstall": "Uninstalled {{name}}",
         "scanning": "Scanning...",
         "docs": "Docs",
@@ -348,6 +349,11 @@
         "empty": "Click Refresh to scan for AI CLI tools",
         "status_installed": "Installed",
         "status_not_installed": "Not Installed",
+        "status_legacy": "Legacy",
+        "legacy_notice": "This CLI has moved to a supported successor. Use the migration guide before changing it.",
+        "migrate": "Migrate to Kiro",
+        "migration_guide": "Migration guide",
+        "confirm_migrate": "Migrate {{name}} to Kiro CLI now?",
         "tools": {
             "claude": {
                 "name": "Claude Code",
@@ -429,9 +435,26 @@
                 "name": "Crush",
                 "description": "Charm's terminal AI coding agent"
             },
+            "droid": {
+                "name": "Factory Droid",
+                "description": "Factory's autonomous coding agent for terminal workflows"
+            },
+            "vibe": {
+                "name": "Mistral Vibe",
+                "description": "Mistral's open-source terminal coding agent"
+            },
+            "qoder": {
+                "name": "Qoder CLI",
+                "description": "Qoder's agentic coding interface for terminal workflows"
+            },
+            "pi": {
+                "name": "Pi Coding Agent",
+                "description": "Minimal, extensible terminal coding agent"
+            },
             "amazonq": {
                 "name": "Amazon Q Developer CLI",
-                "description": "AWS Amazon Q command-line coding assistant"
+                "description": "Legacy AWS CLI; migrate existing installations to Kiro CLI",
+                "notice": "Amazon Q CLI is a legacy path. `q update` migrates the installation to Kiro CLI."
             }
         }
     },

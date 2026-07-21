@@ -61,6 +61,8 @@ const AI_TOOL_PATTERNS: &[(&str, &str)] = &[
     // Crush
     (".crush/cache", "Crush cache"),
     (".config/crush/cache", "Crush cache"),
+    // Pi coding agent (sessions only; keep .pi/agent settings intact)
+    (".pi/sessions", "Pi Coding Agent sessions"),
     // Codeium
     (".codeium", "Codeium AI cache"),
     // Tabnine

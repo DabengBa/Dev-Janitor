@@ -25,8 +25,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 24
-  PNPM_VERSION: 11.5.0
-  RUST_TOOLCHAIN: 1.95.0
+  PNPM_VERSION: 11.15.1
+  RUST_TOOLCHAIN: 1.97.1
 
 jobs:
   lint:
@@ -52,6 +52,9 @@ jobs:
 
       - name: Validate release version fields
         run: pnpm validate:release
+
+      - name: Validate AI CLI catalog
+        run: pnpm validate:ai-catalog
 
       - name: Lint & type check
         run: pnpm lint

@@ -34,7 +34,8 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 
 - Inspect installed tools across Node, Python, Rust, Go, and related ecosystems.
 - Check versions and update common global packages.
-- Manage current AI CLI tools from one interface, including Codex, Claude Code, Cursor, Gemini CLI, Aider, Continue, Kiro, iFlow, OpenCode, Goose, OpenHands, Auggie, Kilo Code, Junie, GitHub Copilot CLI, Qwen Code, Cline, Amp, Crush, and Amazon Q Developer CLI.
+- Manage 25 AI CLI tools from one interface, including Codex, Claude Code, Kiro, Factory Droid, Mistral Vibe, Qoder CLI, Pi, OpenCode, Gemini CLI, and GitHub Copilot CLI.
+- Follow official native install and self-update flows where available; legacy Amazon Q installations are guided through migration to Kiro CLI.
 
 ### Security Scan
 
@@ -80,6 +81,7 @@ Dev Janitor helps keep a local development machine under control. It focuses on 
 ## Installation
 
 The latest stable version is published from the `v*` tag release workflow after a preflight validation pass.
+Installed production builds check signed GitHub releases and can download, install, and relaunch into an update from inside the app.
 
 ### Windows
 
@@ -107,8 +109,8 @@ Dev Janitor is built with Tauri 2, React 19, and Rust.
 ### Prerequisites
 
 - Node.js 24 LTS+
-- pnpm 11.5.0+
-- Rust 1.95.0
+- pnpm 11.15.1+
+- Rust 1.97.1
 
 ### Setup
 
@@ -135,6 +137,10 @@ cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 `pnpm test` runs the Rust core tests without compiling the Tauri desktop shell.
 Use `pnpm test:rust:full` when changing Tauri command wiring. Default Cargo and
 Tauri builds still enable the full `desktop` feature.
+
+The AI CLI catalog is checked for local metadata drift on every CI run. A
+separate weekly workflow verifies official documentation and package registry
+endpoints without slowing down pull requests.
 
 </details>
 

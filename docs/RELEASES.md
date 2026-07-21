@@ -9,7 +9,7 @@ This document records the repository release line, GitHub tag state, and Actions
 - Release URL: https://github.com/cocojojo5213/Dev-Janitor/releases/tag/v2.4.3
 - Published asset count: 22
 - Next app version in this checkout: `2.5.0` (not yet published)
-- Current toolchain baseline: Node.js 24, pnpm 11.5.0, Rust 1.95.0
+- Current toolchain baseline: Node.js 24, pnpm 11.15.1, Rust 1.97.1
 
 The repository had historical draft releases left by failed or repeated release runs. Those stale drafts were deleted on 2026-06-05. During the `v2.4.2` publish, the first tag run created an empty draft release before a Windows CI test failure was fixed; that draft was deleted before the tag was moved to the fixed commit and the final release was published.
 The `v2.4.3` publish completed successfully on the first tag run after hardening cache cleanup target validation.
@@ -120,10 +120,12 @@ Before tagging:
 corepack pnpm install --frozen-lockfile
 corepack pnpm lint
 corepack pnpm validate:release
+corepack pnpm validate:ai-catalog
 corepack pnpm build
 corepack pnpm test
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --locked
 cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 git diff --check
 ```

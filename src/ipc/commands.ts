@@ -267,6 +267,11 @@ export interface AiCliTool {
     install_command: string;
     update_command: string;
     uninstall_command: string;
+    install_supported: boolean;
+    update_supported: boolean;
+    uninstall_supported: boolean;
+    support_status: 'active' | 'legacy';
+    migration_url: string | null;
     docs_url: string;
     config_paths: AiConfigFile[];
 }

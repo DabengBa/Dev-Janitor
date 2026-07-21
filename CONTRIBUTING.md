@@ -22,8 +22,8 @@ pnpm tauri dev
 ## Toolchain
 
 - Node.js `24 LTS+`
-- pnpm `11.5.0+`
-- Rust `1.95.0`
+- pnpm `11.15.1+`
+- Rust `1.97.1`
 
 ## Validation
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { AiCliTool } from '../ipc/commands';
 
 // ============ Types ============
 
@@ -115,16 +116,7 @@ export interface PortInfoStore {
     state: string;
 }
 
-export interface AiCliToolStore {
-    id: string;
-    name: string;
-    description: string;
-    installed: boolean;
-    version: string | null;
-    install_command: string;
-    docs_url: string;
-    config_paths: Array<{ name: string; path: string; exists: boolean }> | null;
-}
+export type AiCliToolStore = AiCliTool;
 
 export const useAppStore = create<AppState>()(
     persist(

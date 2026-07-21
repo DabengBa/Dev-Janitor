@@ -5,7 +5,7 @@
   "author": "cocojojo5213",
   "license": "MIT",
   "version": "2.5.0",
-  "packageManager": "pnpm@11.5.0",
+  "packageManager": "pnpm@11.15.1",
   "homepage": "https://github.com/cocojojo5213/Dev-Janitor",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
   },
   "engines": {
     "node": ">=24 <25",
-    "pnpm": ">=11.5.0"
+    "pnpm": ">=11.15.1"
   },
   "type": "module",
   "scripts": {
@@ -28,31 +28,28 @@
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features --lib",
     "test:rust:full": "cargo test --manifest-path src-tauri/Cargo.toml --locked",
     "validate:release": "node scripts/validate-release-version.mjs",
+    "validate:ai-catalog": "node scripts/audit-ai-catalog.mjs",
     "validate:artifacts": "node scripts/validate-release-artifacts.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.15",
-    "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-progress": "^1.1.8",
-    "@radix-ui/react-tabs": "^1.1.13",
-    "@radix-ui/react-tooltip": "^1.2.8",
-    "@tauri-apps/api": "2.11.0",
+    "@radix-ui/react-dialog": "^1.1.20",
+    "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
-    "i18next": "^26.3.0",
+    "i18next": "^26.3.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-i18next": "^17.0.8",
+    "react-i18next": "^17.0.10",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.2",
-    "@types/react": "^19.2.16",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "typescript": "~6.0.3",
-    "vite": "^8.0.16"
+    "@vitejs/plugin-react": "^6.0.3",
+    "typescript": "~7.0.2",
+    "vite": "^8.1.5"
   }
 }
