@@ -7,6 +7,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) | [Semantic Ver
 
 ---
 
+## [Unreleased]
+
+---
+
+## [2.5.0] - 2026-07-21
+
+### Updates & Delivery | 更新与交付
+
+- Show the installed app version in Settings and the sidebar, add manual update checks with clear status and download progress, and automatically relaunch after a signed update is installed.
+  在设置页和侧栏显示已安装版本，新增带状态与下载进度的手动更新检查，并在签名更新安装完成后自动重新启动应用。
+- Keep automatic startup update checks while adding retryable error handling and an install action that remains available after dismissing the initial prompt.
+  保留启动时自动检查更新，同时增加可重试的错误处理，并让用户关闭首次提示后仍可从设置页安装更新。
+
+### Build & Test Performance | 构建与测试性能
+
+- Separate the Tauri desktop shell behind the default `desktop` Cargo feature, allowing core unit tests to skip Tauri, GTK, and WebKit compilation without changing normal app builds.
+  将 Tauri 桌面壳层放到默认启用的 `desktop` Cargo feature 后，使核心单元测试无需编译 Tauri、GTK 和 WebKit，同时保持普通应用构建行为不变。
+- Add the fast `pnpm test` entry point, replace per-commit release builds with platform compile checks, remove redundant checks, and cache Rust CI and release builds per target.
+  新增快速 `pnpm test` 入口，以跨平台编译检查替代每次提交时的 release 构建，移除重复检查，并按目标平台缓存 Rust CI 与发布构建。
+- Use a parallel-friendly release profile without cross-crate LTO, prioritizing GitHub build time over a small installer-size reduction.
+  使用适合并行编译的 release profile，关闭跨 crate LTO，优先缩短 GitHub 构建时间，不再追求有限的安装包体积减少。
+
+---
+
 ## [2.4.3] - 2026-06-08
 
 ### Cache Cleanup Hardening | 缓存清理加固

@@ -126,11 +126,15 @@ pnpm tauri dev
 pnpm lint
 pnpm validate:release
 pnpm build
+pnpm test
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 ```
+
+`pnpm test` 只编译并运行 Rust 核心测试，不会构建 Tauri 桌面壳层。
+修改 Tauri 命令接线时可运行 `pnpm test:rust:full`；默认的 Cargo 与 Tauri
+构建仍会启用完整的 `desktop` feature。
 
 </details>
 

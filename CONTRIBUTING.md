@@ -33,11 +33,16 @@ Run the relevant checks before opening a pull request:
 pnpm lint
 pnpm validate:release
 pnpm build
+pnpm test
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 ```
+
+`pnpm test` deliberately disables the default `desktop` feature so core unit
+tests do not compile Tauri and native webview dependencies. Use
+`pnpm test:rust:full`, a default `cargo check`, or `pnpm tauri build` when
+changing the desktop shell itself.
 
 If you change cross-platform command execution or Tauri backend behavior, also verify Windows behavior when possible.
 

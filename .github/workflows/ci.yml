@@ -4,8 +4,16 @@ on:
   workflow_dispatch:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'assets/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'assets/**'
 
 permissions:
   contents: read
@@ -48,11 +56,20 @@ jobs:
       - name: Lint & type check
         run: pnpm lint
 
-  build:
+  desktop-check:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, windows-2025-vs2026, macos-latest]
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            validation: clippy
+          - platform: windows-2025-vs2026
+            target: x86_64-pc-windows-msvc
+            validation: check
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            validation: check
     
     runs-on: ${{ matrix.platform }}
     
@@ -77,11 +94,14 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: clippy, rustfmt
+          targets: ${{ matrix.target }}
       
       - name: Rust cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
         with:
           workspaces: src-tauri -> target
+          shared-key: ci-${{ matrix.target }}
+          cache-workspace-crates: true
       
       - name: Install dependencies (Ubuntu)
         if: matrix.platform == 'ubuntu-22.04'
@@ -95,23 +115,22 @@ jobs:
       - name: Build frontend
         run: pnpm build
 
-      - name: Rust format check
+      - name: Rust format check (Linux)
+        if: matrix.validation == 'clippy'
         run: cargo fmt --check
         working-directory: src-tauri
-      
-      - name: Check Rust code
-        run: cargo check
-        working-directory: src-tauri
-      
-      - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
-        working-directory: src-tauri
-      
-      - name: Build Tauri App
-        run: cargo build --release
+
+      - name: Clippy (Linux)
+        if: matrix.validation == 'clippy'
+        run: cargo clippy --locked --target ${{ matrix.target }} --all-targets -- -D warnings
         working-directory: src-tauri
 
-  test:
+      - name: Desktop compile check
+        if: matrix.validation == 'check'
+        run: cargo check --locked --target ${{ matrix.target }} --all-targets
+        working-directory: src-tauri
+
+  core-test:
     strategy:
       fail-fast: false
       matrix:
@@ -125,19 +144,14 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
-          components: clippy, rustfmt
       
       - name: Rust cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
         with:
           workspaces: src-tauri -> target
+          shared-key: core-${{ matrix.platform }}
+          cache-workspace-crates: true
       
-      - name: Install dependencies (Ubuntu)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      
-      - name: Run tests
-        run: cargo test
+      - name: Run core tests (without desktop shell)
+        run: cargo test --locked --no-default-features --lib
         working-directory: src-tauri

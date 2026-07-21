@@ -8,6 +8,7 @@ mod ai_cli;
 mod ai_tools;
 mod cache;
 mod chat_history;
+#[cfg(feature = "desktop")]
 mod commands;
 mod config;
 mod detection;
@@ -17,6 +18,7 @@ mod security_scan;
 mod services;
 mod utils;
 
+#[cfg(feature = "desktop")]
 use commands::{
     analyze_path_cmd, clean_cache_cmd, clean_multiple_caches, delete_ai_junk_cmd,
     delete_chat_file_cmd, delete_multiple_ai_junk, delete_multiple_chat_files,
@@ -29,6 +31,7 @@ use commands::{
     update_ai_tool_cmd, update_package,
 };
 
+#[cfg(feature = "desktop")]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -89,3 +92,7 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+/// Keep the binary target buildable when only the core library is enabled.
+#[cfg(not(feature = "desktop"))]
+pub fn run() {}

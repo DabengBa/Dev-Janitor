@@ -5,7 +5,7 @@ import { useAppStore } from './store';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ConfirmDialog } from './components/shared/ConfirmDialog';
-import { useAutoUpdater } from './hooks/useAutoUpdater';
+import { AutoUpdaterProvider, useUpdater } from './hooks/useAutoUpdater';
 import './styles/index.css';
 
 // Lazy load views for better performance
@@ -90,10 +90,33 @@ function CurrentView() {
   );
 }
 
-function App() {
+function AppContent() {
   const { t } = useTranslation();
   const currentView = useAppStore((state) => state.currentView);
-  const { pendingUpdate, confirmInstall, cancelInstall } = useAutoUpdater();
+  const {
+    pendingUpdate,
+    promptOpen,
+    status,
+    progress,
+    confirmInstall,
+    cancelInstall,
+  } = useUpdater();
+  const updateBusy = status === 'downloading' || status === 'installing' || status === 'restarting';
+
+  const updateDescription = (() => {
+    if (status === 'downloading') {
+      return progress?.percent === undefined
+        ? t('updater.downloading')
+        : t('updater.downloading_progress', { progress: progress.percent });
+    }
+    if (status === 'installing') {
+      return t('updater.installing');
+    }
+    if (status === 'restarting') {
+      return t('updater.restarting');
+    }
+    return pendingUpdate ? t('updater.available', { version: pendingUpdate.version }) : '';
+  })();
 
   return (
     <div className="app-container">
@@ -107,13 +130,23 @@ function App() {
         </div>
       </main>
       <ConfirmDialog
-        open={pendingUpdate !== null}
-        title={t('updater.confirm_install_title', { defaultValue: 'Install Update' })}
-        description={pendingUpdate ? t('updater.available', { version: pendingUpdate.version }) : ''}
+        open={promptOpen}
+        title={t('updater.confirm_install_title')}
+        description={updateDescription}
+        confirmLabel={updateBusy ? t(`updater.${status}`) : t('updater.install')}
+        busy={updateBusy}
         onConfirm={confirmInstall}
         onCancel={cancelInstall}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AutoUpdaterProvider>
+      <AppContent />
+    </AutoUpdaterProvider>
   );
 }
 

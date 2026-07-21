@@ -63,6 +63,16 @@
     flex: 1;
 }
 
+.sidebar-version {
+    max-width: 56px;
+    overflow: hidden;
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* === Main Content === */
 .main-content {
     flex: 1;
@@ -646,6 +656,64 @@ textarea {
     display: flex;
     gap: var(--spacing-sm);
     flex-wrap: wrap;
+}
+
+.settings-view .setting-update-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+}
+
+.settings-view .setting-update-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-view .setting-version {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.settings-view .setting-update-status {
+    margin-top: var(--spacing-xs);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    overflow-wrap: anywhere;
+}
+
+.settings-view .setting-update-status.is-available,
+.settings-view .setting-update-status.is-up-to-date {
+    color: var(--color-success);
+}
+
+.settings-view .setting-update-status.is-error {
+    color: var(--color-danger);
+}
+
+.update-progress {
+    display: block;
+    width: min(320px, 100%);
+    height: 4px;
+    margin-top: var(--spacing-sm);
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--color-bg-tertiary);
+}
+
+.update-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--color-primary);
+    transition: width var(--transition-normal);
+}
+
+@media (max-width: 720px) {
+    .settings-view .setting-update-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
 }
 
 /* === Tools View === */

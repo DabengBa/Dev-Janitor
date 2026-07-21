@@ -4,7 +4,7 @@
   "private": true,
   "author": "cocojojo5213",
   "license": "MIT",
-  "version": "2.4.3",
+  "version": "2.5.0",
   "packageManager": "pnpm@11.5.0",
   "homepage": "https://github.com/cocojojo5213/Dev-Janitor",
   "repository": {
@@ -24,6 +24,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test": "pnpm test:rust",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --locked --no-default-features --lib",
+    "test:rust:full": "cargo test --manifest-path src-tauri/Cargo.toml --locked",
     "validate:release": "node scripts/validate-release-version.mjs",
     "validate:artifacts": "node scripts/validate-release-artifacts.mjs",
     "tauri": "tauri"

@@ -126,11 +126,15 @@ pnpm tauri dev
 pnpm lint
 pnpm validate:release
 pnpm build
+pnpm test
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo check --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 ```
+
+`pnpm test` runs the Rust core tests without compiling the Tauri desktop shell.
+Use `pnpm test:rust:full` when changing Tauri command wiring. Default Cargo and
+Tauri builds still enable the full `desktop` feature.
 
 </details>
 

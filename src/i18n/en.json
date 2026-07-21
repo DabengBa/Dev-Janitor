@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Dev Janitor",
-        "version": "v2.4.3"
+        "version": "v2.5.0"
     },
     "nav": {
         "tools": "Tools",
@@ -466,12 +466,27 @@
         "theme_system": "System",
         "language": "Language",
         "language_en": "English",
-        "language_zh": "Simplified Chinese"
+        "language_zh": "Simplified Chinese",
+        "updates": "App updates",
+        "current_version": "Current version"
     },
     "updater": {
         "available": "Version {{version}} is available. Install now?",
-        "installed": "Update installed. The app will restart.",
-        "failed": "Update installation failed."
+        "available_short": "Version {{version}} is available",
+        "confirm_install_title": "Install update",
+        "check": "Check for updates",
+        "checking": "Checking for updates...",
+        "up_to_date": "You're up to date",
+        "ready": "Automatic update checks are enabled",
+        "install": "Install update",
+        "downloading": "Downloading update...",
+        "downloading_progress": "Downloading update... {{progress}}%",
+        "installing": "Installing update...",
+        "restarting": "Restarting...",
+        "retry": "Retry",
+        "unsupported": "Update checks are available in the installed desktop app",
+        "failed": "Update failed.",
+        "failed_detail": "Update failed: {{error}}"
     },
     "common": {
         "loading": "Loading...",

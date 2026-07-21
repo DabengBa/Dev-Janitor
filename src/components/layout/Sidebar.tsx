@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore, NavView } from '../../store';
+import { useUpdater } from '../../hooks/useAutoUpdater';
 
 // Icon components (minimal SVG icons)
 const Icons = {
@@ -88,6 +89,7 @@ const navItems: { id: NavView; icon: React.ReactNode }[] = [
 export function Sidebar() {
     const { t } = useTranslation();
     const { currentView, setCurrentView } = useAppStore();
+    const { currentVersion } = useUpdater();
 
     return (
         <aside className="sidebar" role="navigation" aria-label="Main navigation">
@@ -112,6 +114,10 @@ export function Sidebar() {
             ))}
 
             <div className="sidebar-spacer" />
+
+            <span className="sidebar-version" title={`Dev Janitor v${currentVersion.replace(/^v/, '')}`}>
+                v{currentVersion.replace(/^v/, '')}
+            </span>
 
             <button
                 className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
