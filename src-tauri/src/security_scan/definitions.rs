@@ -283,7 +283,7 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
             id: "claude".into(),
             name: "Claude Code".into(),
             description: "Anthropic's official AI coding CLI".into(),
-            docs_url: "https://docs.claude.com/en/docs/claude-code/setup".into(),
+            docs_url: "https://code.claude.com/docs/en/install".into(),
             process_names: vec!["claude".into(), "claude-code".into()],
             ports: vec![
                 PortRule {
@@ -769,13 +769,174 @@ pub fn get_ai_tool_rules() -> Vec<AiToolSecurityRule> {
         },
 
         // =====================================
+        // Sourcegraph Cody
+        // =====================================
+        AiToolSecurityRule {
+            id: "cody".into(),
+            name: "Sourcegraph Cody".into(),
+            description: "Sourcegraph's coding assistant CLI".into(),
+            docs_url: "https://sourcegraph.com/docs/cody/clients/install-cli".into(),
+            process_names: vec!["cody".into(), "cody-agent".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Token in Cody Config".into(),
+                description: "Sourcegraph access tokens stored in Cody configuration".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*.json".into(),
+                    pattern: "accessToken|access_token|token|sgp_".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use Sourcegraph's login flow or a secret-backed environment variable".into(),
+            }],
+            config_paths: vec![".sourcegraph/".into(), ".cody/".into()],
+        },
+
+        // =====================================
+        // Kiro CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "kiro".into(),
+            name: "Kiro CLI".into(),
+            description: "AWS Kiro terminal coding agent".into(),
+            docs_url: "https://kiro.dev/docs/cli/installation/".into(),
+            process_names: vec!["kiro".into(), "kiro-cli".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "AWS Credentials in Kiro Config".into(),
+                description: "AWS credentials or access tokens stored in Kiro settings".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "AKIA|ASIA|aws_access_key_id|aws_secret_access_key|access_token".into(),
+                },
+                risk_level: RiskLevel::High,
+                remediation: "Use AWS SSO, profiles, or the AWS credential chain instead of plaintext secrets".into(),
+            }],
+            config_paths: vec![".kiro/".into()],
+        },
+
+        // =====================================
+        // iFlow CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "iflow".into(),
+            name: "iFlow CLI".into(),
+            description: "iFlow terminal AI assistant".into(),
+            docs_url: "https://platform.iflow.cn/en/cli/quickstart".into(),
+            process_names: vec!["iflow".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in iFlow Settings".into(),
+                description: "Provider API keys stored in iFlow configuration".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*.json".into(),
+                    pattern: "apiKey|api_key|accessToken|token|sk-".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use iFlow's login flow or environment-backed secrets".into(),
+            }],
+            config_paths: vec![".iflow/".into()],
+        },
+
+        // =====================================
+        // Factory Droid
+        // =====================================
+        AiToolSecurityRule {
+            id: "droid".into(),
+            name: "Factory Droid".into(),
+            description: "Factory's autonomous terminal coding agent".into(),
+            docs_url: "https://docs.factory.ai/reference/cli-reference".into(),
+            process_names: vec!["droid".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Droid Config".into(),
+                description: "Provider API keys or access tokens stored in Droid settings".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "apiKey|api_key|access_token|sk-ant-|sk-".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use environment variables or the Factory login flow instead of plaintext keys".into(),
+            }],
+            config_paths: vec![".factory/".into()],
+        },
+
+        // =====================================
+        // Mistral Vibe
+        // =====================================
+        AiToolSecurityRule {
+            id: "vibe".into(),
+            name: "Mistral Vibe".into(),
+            description: "Mistral's open-source terminal coding agent".into(),
+            docs_url: "https://docs.mistral.ai/vibe/code/cli/install-setup".into(),
+            process_names: vec!["vibe".into(), "vibe-acp".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "API Key in Vibe Config".into(),
+                description: "Mistral or provider API keys stored in Vibe configuration".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*.toml".into(),
+                    pattern: "api_key|apiKey|token|sk-".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Prefer MISTRAL_API_KEY or another secret-backed environment variable".into(),
+            }],
+            config_paths: vec![".vibe/".into()],
+        },
+
+        // =====================================
+        // Qoder CLI
+        // =====================================
+        AiToolSecurityRule {
+            id: "qoder".into(),
+            name: "Qoder CLI".into(),
+            description: "Qoder's agentic terminal coding interface".into(),
+            docs_url: "https://docs.qoder.com/en/cli/quick-start".into(),
+            process_names: vec!["qodercli".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Secret in Qoder Settings".into(),
+                description: "API keys or access tokens stored in Qoder settings".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*".into(),
+                    pattern: "apiKey|api_key|access_token|token|sk-".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use Qoder's login flow or environment-backed secrets".into(),
+            }],
+            config_paths: vec![".qoder/".into(), ".qodercli/".into()],
+        },
+
+        // =====================================
+        // Pi Coding Agent
+        // =====================================
+        AiToolSecurityRule {
+            id: "pi".into(),
+            name: "Pi Coding Agent".into(),
+            description: "Minimal extensible terminal coding agent".into(),
+            docs_url: "https://badlogic-pi-mono.mintlify.app/installation".into(),
+            process_names: vec!["pi".into()],
+            ports: vec![],
+            configs: vec![ConfigRule {
+                name: "Provider Key in Pi Settings".into(),
+                description: "Provider API keys stored in Pi's global settings".into(),
+                check: ConfigCheckType::FileContains {
+                    path_pattern: "**/*.json".into(),
+                    pattern: "apiKey|api_key|accessToken|token|sk-".into(),
+                },
+                risk_level: RiskLevel::Medium,
+                remediation: "Use environment variables or Pi's provider authentication flow".into(),
+            }],
+            config_paths: vec![".pi/agent/".into(), ".pi/sessions/".into()],
+        },
+
+        // =====================================
         // Amazon Q Developer CLI
         // =====================================
         AiToolSecurityRule {
             id: "amazonq".into(),
             name: "Amazon Q Developer CLI".into(),
             description: "AWS Amazon Q command-line coding assistant".into(),
-            docs_url: "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html".into(),
+            docs_url: "https://kiro.dev/docs/cli/migrating-from-q/".into(),
             process_names: vec!["q".into(), "amazon-q".into(), "amazonq".into()],
             ports: vec![],
             configs: vec![ConfigRule {
@@ -814,29 +975,15 @@ mod tests {
 
     #[test]
     fn security_rule_ids_match_ai_cli_ids() {
-        let ids: Vec<_> = get_ai_tool_rules()
+        let ids: std::collections::HashSet<_> = get_ai_tool_rules()
             .into_iter()
             .map(|rule| rule.id)
             .collect();
-        for id in [
-            "claude",
-            "codex",
-            "goose",
-            "openhands",
-            "auggie",
-            "kilo",
-            "junie",
-            "gemini",
-            "copilot",
-            "qwen",
-            "cline",
-            "amp",
-            "crush",
-            "amazonq",
-        ] {
+        for tool in crate::ai_tools::ai_tools() {
             assert!(
-                ids.contains(&id.to_string()),
-                "missing security rule for {id}"
+                ids.contains(tool.id),
+                "missing security rule for {}",
+                tool.id
             );
         }
     }

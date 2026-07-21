@@ -63,6 +63,16 @@
     flex: 1;
 }
 
+.sidebar-version {
+    max-width: 56px;
+    overflow: hidden;
+    color: var(--color-text-tertiary);
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* === Main Content === */
 .main-content {
     flex: 1;
@@ -648,6 +658,64 @@ textarea {
     flex-wrap: wrap;
 }
 
+.settings-view .setting-update-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+}
+
+.settings-view .setting-update-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-view .setting-version {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.settings-view .setting-update-status {
+    margin-top: var(--spacing-xs);
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    overflow-wrap: anywhere;
+}
+
+.settings-view .setting-update-status.is-available,
+.settings-view .setting-update-status.is-up-to-date {
+    color: var(--color-success);
+}
+
+.settings-view .setting-update-status.is-error {
+    color: var(--color-danger);
+}
+
+.update-progress {
+    display: block;
+    width: min(320px, 100%);
+    height: 4px;
+    margin-top: var(--spacing-sm);
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--color-bg-tertiary);
+}
+
+.update-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--color-primary);
+    transition: width var(--transition-normal);
+}
+
+@media (max-width: 720px) {
+    .settings-view .setting-update-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+}
+
 /* === Tools View === */
 .tools-view .tools-grid {
     display: flex;
@@ -813,6 +881,10 @@ textarea {
     border-color: var(--color-success);
 }
 
+.ai-cli-view .tool-card.legacy {
+    border-color: var(--color-warning);
+}
+
 .ai-cli-view .tool-header {
     display: flex;
     justify-content: space-between;
@@ -823,6 +895,14 @@ textarea {
 .ai-cli-view .tool-header h4 {
     margin: 0;
     font-size: var(--font-size-md);
+}
+
+.ai-cli-view .tool-statuses {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
 .ai-cli-view .status-badge {
@@ -841,10 +921,24 @@ textarea {
     color: var(--color-text-tertiary);
 }
 
+.ai-cli-view .status-badge.legacy {
+    background: rgba(250, 173, 20, 0.18);
+    color: var(--color-warning);
+}
+
 .ai-cli-view .tool-description {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     margin: 0 0 var(--spacing-sm) 0;
+}
+
+.ai-cli-view .tool-notice {
+    margin: 0 0 var(--spacing-sm) 0;
+    padding-left: var(--spacing-sm);
+    border-left: 2px solid var(--color-warning);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    overflow-wrap: anywhere;
 }
 
 .ai-cli-view .tool-version {

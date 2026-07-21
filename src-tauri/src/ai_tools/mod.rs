@@ -19,7 +19,7 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         id: "claude",
         name: "Claude Code",
         description: "Anthropic's terminal coding agent",
-        docs_url: "https://docs.claude.com/en/docs/claude-code/setup",
+        docs_url: "https://code.claude.com/docs/en/install",
         commands: &["claude"],
         version_args: &["--version"],
         version_regex: Some(r"(\d+\.\d+\.\d+)"),
@@ -325,10 +325,72 @@ static AI_TOOLS: &[AiToolMetadata] = &[
         config_extensions: &["json", "jsonc", "yaml", "yml"],
     },
     AiToolMetadata {
+        id: "droid",
+        name: "Factory Droid",
+        description: "Factory's autonomous coding agent for terminal workflows",
+        docs_url: "https://docs.factory.ai/reference/cli-reference",
+        commands: &["droid"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".factory"],
+        config_files: &[
+            ".factory/settings.json",
+            ".factory/settings.local.json",
+            ".factory/config.json",
+            ".factory/mcp.json",
+            ".factory/AGENTS.md",
+        ],
+        config_extensions: &["json", "jsonc", "md"],
+    },
+    AiToolMetadata {
+        id: "vibe",
+        name: "Mistral Vibe",
+        description: "Mistral's open-source coding agent for terminal workflows",
+        docs_url: "https://docs.mistral.ai/vibe/code/cli/install-setup",
+        commands: &["vibe"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".vibe"],
+        config_files: &[".vibe/config.toml"],
+        config_extensions: &["toml", "json", "yaml", "yml"],
+    },
+    AiToolMetadata {
+        id: "qoder",
+        name: "Qoder CLI",
+        description: "Qoder's agentic coding interface for terminal workflows",
+        docs_url: "https://docs.qoder.com/en/cli/quick-start",
+        commands: &["qodercli"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".qoder", ".qodercli"],
+        config_files: &[
+            ".qoder/settings.json",
+            ".qoder/settings.local.json",
+            ".qodercli/config.json",
+        ],
+        config_extensions: &["json", "jsonc", "md"],
+    },
+    AiToolMetadata {
+        id: "pi",
+        name: "Pi Coding Agent",
+        description: "Minimal terminal coding agent with extensible models and tools",
+        docs_url: "https://badlogic-pi-mono.mintlify.app/installation",
+        commands: &["pi"],
+        version_args: &["--version"],
+        version_regex: Some(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z\.-]+)?)"),
+        config_directories: &[".pi/agent"],
+        config_files: &[
+            ".pi/agent/settings.json",
+            ".pi/agent/keybindings.json",
+            ".pi/agent/AGENTS.md",
+        ],
+        config_extensions: &["json", "jsonc", "md", "toml"],
+    },
+    AiToolMetadata {
         id: "amazonq",
         name: "Amazon Q Developer CLI",
-        description: "AWS Amazon Q command-line coding assistant",
-        docs_url: "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/command-line.html",
+        description: "Legacy AWS coding CLI; migrate existing installations to Kiro CLI",
+        docs_url: "https://kiro.dev/docs/cli/migrating-from-q/",
         commands: &["q"],
         version_args: &["--version"],
         version_regex: Some(r"(\d+\.\d+\.\d+)"),
@@ -369,6 +431,10 @@ pub fn normalize_ai_tool_id(id: &str) -> Option<&'static str> {
         "cline" | "cline_cli" => Some("cline"),
         "amp" | "sourcegraph_amp" | "ampcode_cli" => Some("amp"),
         "crush" => Some("crush"),
+        "droid" | "factory_droid" | "factory_cli" => Some("droid"),
+        "vibe" | "mistral_vibe" => Some("vibe"),
+        "qoder" | "qoder_cli" | "qodercli" => Some("qoder"),
+        "pi" | "pi_coding_agent" => Some("pi"),
         "amazonq" | "amazon_q" | "q_cli" => Some("amazonq"),
         _ => None,
     }
@@ -399,6 +465,10 @@ mod tests {
         assert!(ids.contains(&"cline"));
         assert!(ids.contains(&"amp"));
         assert!(ids.contains(&"crush"));
+        assert!(ids.contains(&"droid"));
+        assert!(ids.contains(&"vibe"));
+        assert!(ids.contains(&"qoder"));
+        assert!(ids.contains(&"pi"));
         assert!(ids.contains(&"amazonq"));
     }
 
@@ -422,6 +492,27 @@ mod tests {
         assert_eq!(normalize_ai_tool_id("qwen_code"), Some("qwen"));
         assert_eq!(normalize_ai_tool_id("cline_cli"), Some("cline"));
         assert_eq!(normalize_ai_tool_id("ampcode_cli"), Some("amp"));
+        assert_eq!(normalize_ai_tool_id("factory_cli"), Some("droid"));
+        assert_eq!(normalize_ai_tool_id("mistral_vibe"), Some("vibe"));
+        assert_eq!(normalize_ai_tool_id("qodercli"), Some("qoder"));
+        assert_eq!(normalize_ai_tool_id("pi_coding_agent"), Some("pi"));
         assert_eq!(normalize_ai_tool_id("q_cli"), Some("amazonq"));
+    }
+
+    #[test]
+    fn metadata_ids_and_commands_are_unique() {
+        let mut ids = std::collections::HashSet::new();
+        let mut commands = std::collections::HashSet::new();
+
+        for tool in ai_tools() {
+            assert!(ids.insert(tool.id), "duplicate tool id: {}", tool.id);
+            assert!(tool.docs_url.starts_with("https://"));
+            for command in tool.commands {
+                assert!(
+                    commands.insert(command),
+                    "command {command} is assigned to more than one tool"
+                );
+            }
+        }
     }
 }

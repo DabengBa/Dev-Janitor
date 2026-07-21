@@ -1,0 +1,31 @@
+{
+  "reviewedAt": "2026-07-21",
+  "maxReviewAgeDays": 120,
+  "tools": [
+    { "id": "claude", "docsUrl": "https://code.claude.com/docs/en/install", "registry": { "type": "npm", "name": "@anthropic-ai/claude-code" } },
+    { "id": "codex", "docsUrl": "https://developers.openai.com/codex/cli", "registry": { "type": "npm", "name": "@openai/codex" } },
+    { "id": "opencode", "docsUrl": "https://opencode.ai/docs", "registry": { "type": "npm", "name": "opencode-ai" } },
+    { "id": "goose", "docsUrl": "https://goose-docs.ai/docs/getting-started/installation" },
+    { "id": "openhands", "docsUrl": "https://docs.openhands.dev/openhands/usage/cli/installation" },
+    { "id": "auggie", "docsUrl": "https://docs.augmentcode.com/cli/overview", "registry": { "type": "npm", "name": "@augmentcode/auggie" } },
+    { "id": "kilo", "docsUrl": "https://kilo.ai/docs/code-with-ai/platforms/cli", "registry": { "type": "npm", "name": "@kilocode/cli" } },
+    { "id": "junie", "docsUrl": "https://junie.jetbrains.com/docs/junie-cli.html" },
+    { "id": "gemini", "docsUrl": "https://google-gemini.github.io/gemini-cli/", "registry": { "type": "npm", "name": "@google/gemini-cli" } },
+    { "id": "aider", "docsUrl": "https://aider.chat/docs/install.html" },
+    { "id": "continue", "docsUrl": "https://docs.continue.dev/cli/quickstart", "registry": { "type": "npm", "name": "@continuedev/cli" } },
+    { "id": "cody", "docsUrl": "https://sourcegraph.com/docs/cody/clients/install-cli", "registry": { "type": "npm", "name": "@sourcegraph/cody" } },
+    { "id": "cursor", "docsUrl": "https://docs.cursor.com/en/cli/installation" },
+    { "id": "kiro", "docsUrl": "https://kiro.dev/docs/cli/installation/" },
+    { "id": "iflow", "docsUrl": "https://platform.iflow.cn/en/cli/quickstart", "registry": { "type": "npm", "name": "@iflow-ai/iflow-cli" } },
+    { "id": "copilot", "docsUrl": "https://github.com/github/copilot-cli", "registry": { "type": "npm", "name": "@github/copilot" } },
+    { "id": "qwen", "docsUrl": "https://github.com/QwenLM/qwen-code", "registry": { "type": "npm", "name": "@qwen-code/qwen-code" } },
+    { "id": "cline", "docsUrl": "https://cline.bot", "registry": { "type": "npm", "name": "cline" } },
+    { "id": "amp", "docsUrl": "https://ampcode.com/" },
+    { "id": "crush", "docsUrl": "https://charm.sh/crush", "registry": { "type": "npm", "name": "@charmland/crush" } },
+    { "id": "droid", "docsUrl": "https://docs.factory.ai/reference/cli-reference", "registry": { "type": "npm", "name": "droid" } },
+    { "id": "vibe", "docsUrl": "https://docs.mistral.ai/vibe/code/cli/install-setup", "registry": { "type": "pypi", "name": "mistral-vibe" } },
+    { "id": "qoder", "docsUrl": "https://docs.qoder.com/en/cli/quick-start" },
+    { "id": "pi", "docsUrl": "https://badlogic-pi-mono.mintlify.app/installation", "registry": { "type": "npm", "name": "@mariozechner/pi-coding-agent" } },
+    { "id": "amazonq", "docsUrl": "https://kiro.dev/docs/cli/migrating-from-q/" }
+  ]
+}

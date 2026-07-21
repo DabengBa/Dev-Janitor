@@ -1,6 +1,7 @@
 //! AI CLI Tools management module for Dev Janitor v2
 //! Manage AI coding assistant CLI tools
 
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
@@ -20,8 +21,20 @@ pub struct AiCliTool {
     pub install_command: String,
     pub update_command: String,
     pub uninstall_command: String,
+    pub install_supported: bool,
+    pub update_supported: bool,
+    pub uninstall_supported: bool,
+    pub support_status: AiCliSupportStatus,
+    pub migration_url: Option<String>,
     pub docs_url: String,
     pub config_paths: Vec<AiConfigFile>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AiCliSupportStatus {
+    Active,
+    Legacy,
 }
 
 /// Represents a config file for an AI CLI tool
@@ -41,9 +54,17 @@ struct ToolLifecycleCommands {
 fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
     match tool_id {
         "claude" => ToolLifecycleCommands {
-            install: "npm install -g @anthropic-ai/claude-code".to_string(),
-            update: "npm install -g @anthropic-ai/claude-code@latest".to_string(),
-            uninstall: "npm uninstall -g @anthropic-ai/claude-code".to_string(),
+            install: if cfg!(target_os = "windows") {
+                "irm https://claude.ai/install.ps1 | iex".to_string()
+            } else {
+                "curl -fsSL https://claude.ai/install.sh | bash".to_string()
+            },
+            update: "claude update".to_string(),
+            uninstall: if cfg!(target_os = "windows") {
+                "powershell: remove native Claude files; npm uninstall legacy package".to_string()
+            } else {
+                "rm native Claude files; npm uninstall legacy package".to_string()
+            },
         },
         "codex" => ToolLifecycleCommands {
             install: "npm i -g @openai/codex".to_string(),
@@ -56,8 +77,8 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             } else {
                 "curl -fsSL https://opencode.ai/install | bash".to_string()
             },
-            update: "npm install -g opencode-ai@latest".to_string(),
-            uninstall: "npm uninstall -g opencode-ai".to_string(),
+            update: "opencode upgrade".to_string(),
+            uninstall: "opencode uninstall".to_string(),
         },
         "goose" => ToolLifecycleCommands {
             install: if cfg!(target_os = "windows") {
@@ -129,10 +150,9 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             uninstall: "npm uninstall -g @continuedev/cli".to_string(),
         },
         "cody" => ToolLifecycleCommands {
-            install: "npm install -g @sourcegraph/cody @sourcegraph/cody-agent".to_string(),
-            update: "npm install -g @sourcegraph/cody@latest @sourcegraph/cody-agent@latest"
-                .to_string(),
-            uninstall: "npm uninstall -g @sourcegraph/cody @sourcegraph/cody-agent".to_string(),
+            install: "npm install -g @sourcegraph/cody".to_string(),
+            update: "npm install -g @sourcegraph/cody@latest".to_string(),
+            uninstall: "npm uninstall -g @sourcegraph/cody".to_string(),
         },
         "cursor" => ToolLifecycleCommands {
             install: if cfg!(target_os = "windows") {
@@ -189,10 +209,42 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
             update: "npm install -g @charmland/crush@latest".to_string(),
             uninstall: "npm uninstall -g @charmland/crush".to_string(),
         },
+        "droid" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "irm https://app.factory.ai/cli/windows | iex".to_string()
+            } else {
+                "curl -fsSL https://app.factory.ai/cli | sh".to_string()
+            },
+            update: "droid update".to_string(),
+            uninstall: "Manual uninstall from Factory Droid docs".to_string(),
+        },
+        "vibe" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "uv tool install mistral-vibe".to_string()
+            } else {
+                "curl -LsSf https://mistral.ai/vibe/install.sh | bash".to_string()
+            },
+            update: "uv tool upgrade mistral-vibe".to_string(),
+            uninstall: "uv tool uninstall mistral-vibe".to_string(),
+        },
+        "qoder" => ToolLifecycleCommands {
+            install: if cfg!(target_os = "windows") {
+                "irm https://qoder.com/install.ps1 | iex".to_string()
+            } else {
+                "curl -fsSL https://qoder.com/install | bash".to_string()
+            },
+            update: "qodercli update".to_string(),
+            uninstall: "Manual uninstall from Qoder CLI docs".to_string(),
+        },
+        "pi" => ToolLifecycleCommands {
+            install: "npm install -g @mariozechner/pi-coding-agent".to_string(),
+            update: "npm update -g @mariozechner/pi-coding-agent".to_string(),
+            uninstall: "npm uninstall -g @mariozechner/pi-coding-agent".to_string(),
+        },
         "amazonq" => ToolLifecycleCommands {
-            install: "Manual install from Amazon Q Developer CLI docs".to_string(),
-            update: "Manual update from Amazon Q Developer CLI docs".to_string(),
-            uninstall: "Manual uninstall from Amazon Q Developer CLI docs".to_string(),
+            install: "Visit the Kiro migration guide".to_string(),
+            update: "q update".to_string(),
+            uninstall: "Manual uninstall after migrating to Kiro CLI".to_string(),
         },
         _ => ToolLifecycleCommands {
             install: "Unsupported".to_string(),
@@ -205,23 +257,39 @@ fn lifecycle_commands(tool_id: &str) -> ToolLifecycleCommands {
 /// Get all supported AI CLI tools with their status
 pub fn get_ai_cli_tools() -> Vec<AiCliTool> {
     ai_tools()
-        .iter()
-        .map(|metadata| {
-            let commands = lifecycle_commands(metadata.id);
-            check_tool(AiCliTool {
-                id: metadata.id.to_string(),
-                name: metadata.name.to_string(),
-                description: metadata.description.to_string(),
-                installed: false,
-                version: None,
-                install_command: commands.install,
-                update_command: commands.update,
-                uninstall_command: commands.uninstall,
-                docs_url: metadata.docs_url.to_string(),
-                config_paths: find_config_files(metadata.id),
-            })
-        })
+        .par_iter()
+        .map(|metadata| check_tool(tool_from_metadata(metadata)))
         .collect()
+}
+
+fn tool_from_metadata(metadata: &AiToolMetadata) -> AiCliTool {
+    let commands = lifecycle_commands(metadata.id);
+    let install_supported = !is_manual_action(&commands.install);
+    let update_supported = !is_manual_action(&commands.update);
+    let uninstall_supported = !is_manual_action(&commands.uninstall);
+
+    AiCliTool {
+        id: metadata.id.to_string(),
+        name: metadata.name.to_string(),
+        description: metadata.description.to_string(),
+        installed: false,
+        version: None,
+        install_command: commands.install,
+        update_command: commands.update,
+        uninstall_command: commands.uninstall,
+        install_supported,
+        update_supported,
+        uninstall_supported,
+        support_status: if metadata.id == "amazonq" {
+            AiCliSupportStatus::Legacy
+        } else {
+            AiCliSupportStatus::Active
+        },
+        migration_url: (metadata.id == "amazonq")
+            .then(|| "https://kiro.dev/docs/cli/migrating-from-q/".to_string()),
+        docs_url: metadata.docs_url.to_string(),
+        config_paths: find_config_files(metadata.id),
+    }
 }
 
 /// Configuration discovery patterns for AI CLI tools
@@ -415,16 +483,13 @@ fn extract_semver_like(output: &str) -> Option<String> {
 pub fn install_ai_tool(tool_id: &str) -> Result<String, String> {
     let tool_id =
         normalize_ai_tool_id(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
-    let tools = get_ai_cli_tools();
-    let tool = tools
-        .iter()
-        .find(|t| t.id == tool_id)
-        .ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let metadata = find_ai_tool(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let commands = lifecycle_commands(tool_id);
 
-    if is_manual_action(&tool.install_command) {
+    if is_manual_action(&commands.install) {
         return Err(format!(
             "{} requires manual installation. Visit: {}",
-            tool.name, tool.docs_url
+            metadata.name, metadata.docs_url
         ));
     }
 
@@ -435,16 +500,13 @@ pub fn install_ai_tool(tool_id: &str) -> Result<String, String> {
 pub fn update_ai_tool(tool_id: &str) -> Result<String, String> {
     let tool_id =
         normalize_ai_tool_id(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
-    let tools = get_ai_cli_tools();
-    let tool = tools
-        .iter()
-        .find(|t| t.id == tool_id)
-        .ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let metadata = find_ai_tool(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let commands = lifecycle_commands(tool_id);
 
-    if is_manual_action(&tool.update_command) {
+    if is_manual_action(&commands.update) {
         return Err(format!(
             "{} requires manual update. Visit: {}",
-            tool.name, tool.docs_url
+            metadata.name, metadata.docs_url
         ));
     }
 
@@ -455,16 +517,13 @@ pub fn update_ai_tool(tool_id: &str) -> Result<String, String> {
 pub fn uninstall_ai_tool(tool_id: &str) -> Result<String, String> {
     let tool_id =
         normalize_ai_tool_id(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
-    let tools = get_ai_cli_tools();
-    let tool = tools
-        .iter()
-        .find(|t| t.id == tool_id)
-        .ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let metadata = find_ai_tool(tool_id).ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+    let commands = lifecycle_commands(tool_id);
 
-    if is_manual_action(&tool.uninstall_command) {
+    if is_manual_action(&commands.uninstall) {
         return Err(format!(
             "{} requires manual uninstallation. Visit: {}",
-            tool.name, tool.docs_url
+            metadata.name, metadata.docs_url
         ));
     }
 
@@ -483,6 +542,7 @@ mod tests {
         assert!(is_manual_action(
             "Manual install from Amazon Q Developer CLI docs"
         ));
+        assert!(is_manual_action("Visit the Kiro migration guide"));
         assert!(!is_manual_action("npm install -g @openai/codex"));
     }
 
@@ -495,10 +555,16 @@ mod tests {
         assert!(kiro.update.contains("kiro-cli update"));
 
         let claude = lifecycle_commands("claude");
-        assert!(claude.install.contains("@anthropic-ai/claude-code"));
+        assert!(claude.install.contains("claude.ai/install"));
+        assert_eq!(claude.update, "claude update");
 
         let cody = lifecycle_commands("cody");
-        assert!(cody.install.contains("@sourcegraph/cody-agent"));
+        assert!(cody.install.contains("@sourcegraph/cody"));
+        assert!(!cody.install.contains("@sourcegraph/cody-agent"));
+
+        let opencode = lifecycle_commands("opencode");
+        assert_eq!(opencode.update, "opencode upgrade");
+        assert_eq!(opencode.uninstall, "opencode uninstall");
 
         let goose = lifecycle_commands("goose");
         if cfg!(target_os = "windows") {
@@ -537,6 +603,49 @@ mod tests {
         let amp = lifecycle_commands("amp");
         assert!(amp.install.contains("ampcode.com/install"));
         assert!(amp.update.contains("@ampcode/cli@latest"));
+
+        let droid = lifecycle_commands("droid");
+        assert!(droid.install.contains("app.factory.ai/cli"));
+        assert_eq!(droid.update, "droid update");
+        assert!(is_manual_action(&droid.uninstall));
+
+        let vibe = lifecycle_commands("vibe");
+        assert!(vibe.install.contains("mistral-vibe") || vibe.install.contains("mistral.ai"));
+        assert_eq!(vibe.update, "uv tool upgrade mistral-vibe");
+
+        let qoder = lifecycle_commands("qoder");
+        assert!(qoder.install.contains("qoder.com/install"));
+        assert_eq!(qoder.update, "qodercli update");
+        assert!(is_manual_action(&qoder.uninstall));
+
+        let pi = lifecycle_commands("pi");
+        assert!(pi.install.contains("@mariozechner/pi-coding-agent"));
+        assert!(pi.update.starts_with("npm update -g"));
+    }
+
+    #[test]
+    fn exposes_action_capabilities_and_legacy_migration() {
+        let amazonq = tool_from_metadata(find_ai_tool("amazonq").unwrap());
+        assert_eq!(amazonq.support_status, AiCliSupportStatus::Legacy);
+        assert!(!amazonq.install_supported);
+        assert!(amazonq.update_supported);
+        assert!(!amazonq.uninstall_supported);
+        assert!(amazonq
+            .migration_url
+            .as_deref()
+            .unwrap()
+            .contains("kiro.dev"));
+
+        let qoder = tool_from_metadata(find_ai_tool("qoder").unwrap());
+        assert_eq!(qoder.support_status, AiCliSupportStatus::Active);
+        assert!(qoder.install_supported);
+        assert!(qoder.update_supported);
+        assert!(!qoder.uninstall_supported);
+
+        let claude = tool_from_metadata(find_ai_tool("claude").unwrap());
+        assert!(claude.install_supported);
+        assert!(claude.update_supported);
+        assert!(claude.uninstall_supported);
     }
 }
 
@@ -551,14 +660,51 @@ enum ToolAction {
 fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, String> {
     match (tool_id, action) {
         ("claude", ToolAction::Install) => {
-            run_command("npm", &["install", "-g", "@anthropic-ai/claude-code"])
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-NoProfile".to_string(),
+                        "-ExecutionPolicy".to_string(),
+                        "Bypass".to_string(),
+                        "-Command".to_string(),
+                        "irm https://claude.ai/install.ps1 | iex".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -fsSL https://claude.ai/install.sh | bash")
+            }
         }
-        ("claude", ToolAction::Update) => run_command(
-            "npm",
-            &["install", "-g", "@anthropic-ai/claude-code@latest"],
-        ),
+        ("claude", ToolAction::Update) => run_first_success(&[
+            ("claude", vec!["update".to_string()]),
+            (
+                "npm",
+                vec![
+                    "install".to_string(),
+                    "-g".to_string(),
+                    "@anthropic-ai/claude-code@latest".to_string(),
+                ],
+            ),
+        ]),
         ("claude", ToolAction::Uninstall) => {
-            run_command("npm", &["uninstall", "-g", "@anthropic-ai/claude-code"])
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-NoProfile".to_string(),
+                        "-Command".to_string(),
+                        "Remove-Item -Path \"$env:USERPROFILE\\.local\\bin\\claude.exe\" -Force -ErrorAction SilentlyContinue; Remove-Item -Path \"$env:USERPROFILE\\.local\\share\\claude\" -Recurse -Force -ErrorAction SilentlyContinue; if (Get-Command npm -ErrorAction SilentlyContinue) { npm uninstall -g @anthropic-ai/claude-code }".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("rm -f ~/.local/bin/claude; rm -rf ~/.local/share/claude; if command -v npm >/dev/null 2>&1; then npm uninstall -g @anthropic-ai/claude-code; fi")
+            }
         }
         ("codex", ToolAction::Install) => run_command("npm", &["i", "-g", "@openai/codex"]),
         ("codex", ToolAction::Update) => run_first_success(&[
@@ -585,12 +731,28 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
                 run_shell_command("curl -fsSL https://opencode.ai/install | bash")
             }
         }
-        ("opencode", ToolAction::Update) => {
-            run_command("npm", &["install", "-g", "opencode-ai@latest"])
-        }
-        ("opencode", ToolAction::Uninstall) => {
-            run_command("npm", &["uninstall", "-g", "opencode-ai"])
-        }
+        ("opencode", ToolAction::Update) => run_first_success(&[
+            ("opencode", vec!["upgrade".to_string()]),
+            (
+                "npm",
+                vec![
+                    "install".to_string(),
+                    "-g".to_string(),
+                    "opencode-ai@latest".to_string(),
+                ],
+            ),
+        ]),
+        ("opencode", ToolAction::Uninstall) => run_first_success(&[
+            ("opencode", vec!["uninstall".to_string()]),
+            (
+                "npm",
+                vec![
+                    "uninstall".to_string(),
+                    "-g".to_string(),
+                    "opencode-ai".to_string(),
+                ],
+            ),
+        ]),
         ("goose", ToolAction::Install) => {
             #[cfg(target_os = "windows")]
             {
@@ -732,33 +894,15 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         ("continue", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@continuedev/cli"])
         }
-        ("cody", ToolAction::Install) => run_command(
-            "npm",
-            &[
-                "install",
-                "-g",
-                "@sourcegraph/cody",
-                "@sourcegraph/cody-agent",
-            ],
-        ),
-        ("cody", ToolAction::Update) => run_command(
-            "npm",
-            &[
-                "install",
-                "-g",
-                "@sourcegraph/cody@latest",
-                "@sourcegraph/cody-agent@latest",
-            ],
-        ),
-        ("cody", ToolAction::Uninstall) => run_command(
-            "npm",
-            &[
-                "uninstall",
-                "-g",
-                "@sourcegraph/cody",
-                "@sourcegraph/cody-agent",
-            ],
-        ),
+        ("cody", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@sourcegraph/cody"])
+        }
+        ("cody", ToolAction::Update) => {
+            run_command("npm", &["install", "-g", "@sourcegraph/cody@latest"])
+        }
+        ("cody", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@sourcegraph/cody"])
+        }
         ("kiro", ToolAction::Install) => {
             #[cfg(target_os = "windows")]
             {
@@ -883,6 +1027,76 @@ fn execute_tool_action(tool_id: &str, action: ToolAction) -> Result<String, Stri
         ("crush", ToolAction::Uninstall) => {
             run_command("npm", &["uninstall", "-g", "@charmland/crush"])
         }
+        ("droid", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-NoProfile".to_string(),
+                        "-ExecutionPolicy".to_string(),
+                        "Bypass".to_string(),
+                        "-Command".to_string(),
+                        "irm https://app.factory.ai/cli/windows | iex".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -fsSL https://app.factory.ai/cli | sh")
+            }
+        }
+        ("droid", ToolAction::Update) => run_command("droid", &["update"]),
+        ("droid", ToolAction::Uninstall) => {
+            Err("Factory Droid requires manual uninstallation".to_string())
+        }
+        ("vibe", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                run_command("uv", &["tool", "install", "mistral-vibe"])
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -LsSf https://mistral.ai/vibe/install.sh | bash")
+            }
+        }
+        ("vibe", ToolAction::Update) => run_command("uv", &["tool", "upgrade", "mistral-vibe"]),
+        ("vibe", ToolAction::Uninstall) => {
+            run_command("uv", &["tool", "uninstall", "mistral-vibe"])
+        }
+        ("qoder", ToolAction::Install) => {
+            #[cfg(target_os = "windows")]
+            {
+                run_owned_command(
+                    "powershell",
+                    &[
+                        "-NoProfile".to_string(),
+                        "-ExecutionPolicy".to_string(),
+                        "Bypass".to_string(),
+                        "-Command".to_string(),
+                        "irm https://qoder.com/install.ps1 | iex".to_string(),
+                    ],
+                )
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                run_shell_command("curl -fsSL https://qoder.com/install | bash")
+            }
+        }
+        ("qoder", ToolAction::Update) => run_command("qodercli", &["update"]),
+        ("qoder", ToolAction::Uninstall) => {
+            Err("Qoder CLI requires manual uninstallation".to_string())
+        }
+        ("pi", ToolAction::Install) => {
+            run_command("npm", &["install", "-g", "@mariozechner/pi-coding-agent"])
+        }
+        ("pi", ToolAction::Update) => {
+            run_command("npm", &["update", "-g", "@mariozechner/pi-coding-agent"])
+        }
+        ("pi", ToolAction::Uninstall) => {
+            run_command("npm", &["uninstall", "-g", "@mariozechner/pi-coding-agent"])
+        }
+        ("amazonq", ToolAction::Update) => run_command("q", &["update"]),
         _ => Err(format!("Unsupported action for tool: {}", tool_id)),
     }
 }

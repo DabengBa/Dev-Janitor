@@ -6,5 +6,7 @@
 mod definitions;
 pub mod scanner;
 
+#[cfg(feature = "desktop")]
 pub use definitions::{get_rules, SecurityScanResult};
+#[cfg(feature = "desktop")]
 pub use scanner::{scan_ai_tool_security, scan_specific_tool};

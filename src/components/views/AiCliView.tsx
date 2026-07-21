@@ -49,7 +49,7 @@ export function AiCliView() {
     } | null>(null);
 
     const handleInstall = (tool: AiCliToolStore) => {
-        if (tool.install_command.startsWith('Download')) {
+        if (!tool.install_supported) {
             window.open(tool.docs_url, '_blank');
             return;
         }
@@ -57,10 +57,18 @@ export function AiCliView() {
     };
 
     const handleUpdate = (tool: AiCliToolStore) => {
+        if (!tool.update_supported) {
+            window.open(tool.migration_url ?? tool.docs_url, '_blank');
+            return;
+        }
         setPendingAction({ type: 'update', tool });
     };
 
     const handleUninstall = (tool: AiCliToolStore) => {
+        if (!tool.uninstall_supported) {
+            window.open(tool.docs_url, '_blank');
+            return;
+        }
         setPendingAction({ type: 'uninstall', tool });
     };
 
@@ -82,7 +90,9 @@ export function AiCliView() {
                 message = t('ai_cli.success_install', { name: toolName });
             } else if (type === 'update') {
                 result = await updateAiTool(tool.id);
-                message = t('ai_cli.success_update', { name: toolName });
+                message = tool.support_status === 'legacy'
+                    ? t('ai_cli.success_migrate', { name: toolName })
+                    : t('ai_cli.success_update', { name: toolName });
             } else {
                 result = await uninstallAiTool(tool.id);
                 message = t('ai_cli.success_uninstall', { name: toolName });
@@ -103,7 +113,9 @@ export function AiCliView() {
         if (type === 'install')
             return t('ai_cli.confirm_install', { name, command: tool.install_command });
         if (type === 'update')
-            return t('ai_cli.confirm_update', { name });
+            return tool.support_status === 'legacy'
+                ? t('ai_cli.confirm_migrate', { name })
+                : t('ai_cli.confirm_update', { name });
         return t('ai_cli.confirm_uninstall', { name });
     };
 
@@ -151,46 +163,62 @@ export function AiCliView() {
             {tools.length > 0 && (
                 <div className="tools-grid">
                     {tools.map((tool) => (
-                        <div key={tool.id} className={`card tool-card ${tool.installed ? 'installed' : ''}`}>
+                        <div key={tool.id} className={`card tool-card ${tool.installed ? 'installed' : ''} ${tool.support_status}`}>
                             <div className="tool-header">
                                 <h4>{getToolDisplayName(tool)}</h4>
-                                {tool.installed ? (
-                                    <span className="status-badge installed">{t('ai_cli.status_installed')}</span>
-                                ) : (
-                                    <span className="status-badge not-installed">{t('ai_cli.status_not_installed')}</span>
-                                )}
+                                <div className="tool-statuses">
+                                    {tool.support_status === 'legacy' && (
+                                        <span className="status-badge legacy">{t('ai_cli.status_legacy')}</span>
+                                    )}
+                                    {tool.installed ? (
+                                        <span className="status-badge installed">{t('ai_cli.status_installed')}</span>
+                                    ) : (
+                                        <span className="status-badge not-installed">{t('ai_cli.status_not_installed')}</span>
+                                    )}
+                                </div>
                             </div>
                             <p className="tool-description">{getToolDescription(tool)}</p>
+                            {tool.support_status === 'legacy' && (
+                                <p className="tool-notice">
+                                    {t(`ai_cli.tools.${tool.id}.notice`, { defaultValue: t('ai_cli.legacy_notice') })}
+                                </p>
+                            )}
                             {tool.version && (
                                 <p className="tool-version">v{tool.version}</p>
                             )}
                             <div className="tool-actions">
                                 {tool.installed ? (
                                     <>
-                                        <button
-                                            className="btn btn-primary btn-small"
-                                            onClick={() => handleUpdate(tool)}
-                                            disabled={isOperating !== null}
-                                        >
-                                            {isOperating === `update-${tool.id}` ? (
-                                                <span className="spinner spinner-xs" />
-                                            ) : (
-                                                t('ai_cli.update')
-                                            )}
-                                        </button>
-                                        <button
-                                            className="btn btn-danger btn-small"
-                                            onClick={() => handleUninstall(tool)}
-                                            disabled={isOperating !== null}
-                                        >
-                                            {isOperating === `uninstall-${tool.id}` ? (
-                                                <span className="spinner spinner-xs" />
-                                            ) : (
-                                                t('ai_cli.uninstall')
-                                            )}
-                                        </button>
+                                        {tool.update_supported && (
+                                            <button
+                                                className="btn btn-primary btn-small"
+                                                onClick={() => handleUpdate(tool)}
+                                                disabled={isOperating !== null}
+                                            >
+                                                {isOperating === `update-${tool.id}` ? (
+                                                    <span className="spinner spinner-xs" />
+                                                ) : tool.support_status === 'legacy' ? (
+                                                    t('ai_cli.migrate')
+                                                ) : (
+                                                    t('ai_cli.update')
+                                                )}
+                                            </button>
+                                        )}
+                                        {tool.uninstall_supported && (
+                                            <button
+                                                className="btn btn-danger btn-small"
+                                                onClick={() => handleUninstall(tool)}
+                                                disabled={isOperating !== null}
+                                            >
+                                                {isOperating === `uninstall-${tool.id}` ? (
+                                                    <span className="spinner spinner-xs" />
+                                                ) : (
+                                                    t('ai_cli.uninstall')
+                                                )}
+                                            </button>
+                                        )}
                                     </>
-                                ) : (
+                                ) : tool.install_supported ? (
                                     <button
                                         className="btn btn-primary btn-small"
                                         onClick={() => handleInstall(tool)}
@@ -202,14 +230,16 @@ export function AiCliView() {
                                             t('ai_cli.install')
                                         )}
                                     </button>
-                                )}
+                                ) : null}
                                 <a
-                                    href={tool.docs_url}
+                                    href={tool.migration_url ?? tool.docs_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="btn btn-secondary btn-small"
                                 >
-                                    {t('ai_cli.docs')}
+                                    {tool.support_status === 'legacy'
+                                        ? t('ai_cli.migration_guide')
+                                        : t('ai_cli.docs')}
                                 </a>
                             </div>
 
@@ -247,7 +277,9 @@ export function AiCliView() {
                 title={pendingAction?.type === 'uninstall'
                     ? t('ai_cli.confirm_uninstall_title', { defaultValue: 'Uninstall Tool' })
                     : pendingAction?.type === 'update'
-                    ? t('ai_cli.confirm_update_title', { defaultValue: 'Update Tool' })
+                    ? pendingAction.tool.support_status === 'legacy'
+                        ? t('ai_cli.confirm_migrate_title', { defaultValue: 'Migrate Tool' })
+                        : t('ai_cli.confirm_update_title', { defaultValue: 'Update Tool' })
                     : t('ai_cli.confirm_install_title', { defaultValue: 'Install Tool' })
                 }
                 description={getPendingDescription()}

@@ -47,6 +47,7 @@ const GLOBAL_CHAT_HISTORY_PATTERNS: &[(&str, &str)] = &[
     (".cline", "Cline"),
     (".amp", "Amp"),
     (".crush", "Crush"),
+    (".pi/sessions", "Pi Coding Agent"),
 ];
 
 /// Represents a project with AI chat history
@@ -171,6 +172,12 @@ fn get_chat_history_patterns() -> Vec<ChatHistoryPattern> {
             tool: "Crush",
             patterns: vec![".crush/cache", ".config/crush/cache"],
             file_type: "cache",
+        },
+        // Pi coding agent
+        ChatHistoryPattern {
+            tool: "Pi Coding Agent",
+            patterns: vec![".pi/sessions"],
+            file_type: "chat_history",
         },
         // Codeium
         ChatHistoryPattern {

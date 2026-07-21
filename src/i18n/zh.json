@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "开发清道夫",
-        "version": "v2.4.3"
+        "version": "v2.5.0"
     },
     "nav": {
         "tools": "工具",
@@ -339,6 +339,7 @@
         "confirm_uninstall": "卸载 {{name}}？",
         "success_install": "已安装 {{name}}",
         "success_update": "已更新 {{name}}",
+        "success_migrate": "已将 {{name}} 迁移到受支持的后继工具",
         "success_uninstall": "已卸载 {{name}}",
         "scanning": "扫描中...",
         "docs": "文档",
@@ -348,6 +349,11 @@
         "empty": "点击“刷新”扫描 AI CLI 工具",
         "status_installed": "已安装",
         "status_not_installed": "未安装",
+        "status_legacy": "旧版",
+        "legacy_notice": "该 CLI 已进入迁移阶段，请先查看迁移指南再进行操作。",
+        "migrate": "迁移到 Kiro",
+        "migration_guide": "迁移指南",
+        "confirm_migrate": "现在将 {{name}} 迁移到 Kiro CLI 吗？",
         "tools": {
             "claude": {
                 "name": "Claude Code",
@@ -429,9 +435,26 @@
                 "name": "Crush",
                 "description": "Charm 的终端 AI 编程代理"
             },
+            "droid": {
+                "name": "Factory Droid",
+                "description": "Factory 的终端自主编程代理"
+            },
+            "vibe": {
+                "name": "Mistral Vibe",
+                "description": "Mistral 的开源终端编程代理"
+            },
+            "qoder": {
+                "name": "Qoder CLI",
+                "description": "Qoder 的终端智能编程界面"
+            },
+            "pi": {
+                "name": "Pi Coding Agent",
+                "description": "简洁且可扩展的终端编程代理"
+            },
             "amazonq": {
                 "name": "Amazon Q Developer CLI",
-                "description": "AWS Amazon Q 命令行编程助手"
+                "description": "旧版 AWS CLI，请将现有安装迁移到 Kiro CLI",
+                "notice": "Amazon Q CLI 已进入旧版迁移阶段，`q update` 会将安装迁移到 Kiro CLI。"
             }
         }
     },
@@ -466,12 +489,27 @@
         "theme_system": "跟随系统",
         "language": "语言",
         "language_en": "英文",
-        "language_zh": "简体中文"
+        "language_zh": "简体中文",
+        "updates": "应用更新",
+        "current_version": "当前版本"
     },
     "updater": {
         "available": "发现新版本 {{version}}，现在安装吗？",
-        "installed": "更新已安装，应用将重新启动。",
-        "failed": "更新安装失败。"
+        "available_short": "发现新版本 {{version}}",
+        "confirm_install_title": "安装更新",
+        "check": "检查更新",
+        "checking": "正在检查更新...",
+        "up_to_date": "当前已是最新版本",
+        "ready": "已启用自动检查更新",
+        "install": "安装更新",
+        "downloading": "正在下载更新...",
+        "downloading_progress": "正在下载更新... {{progress}}%",
+        "installing": "正在安装更新...",
+        "restarting": "正在重新启动...",
+        "retry": "重试",
+        "unsupported": "请在已安装的桌面应用中检查更新",
+        "failed": "更新失败。",
+        "failed_detail": "更新失败：{{error}}"
     },
     "common": {
         "loading": "加载中...",

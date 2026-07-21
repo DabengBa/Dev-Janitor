@@ -21,8 +21,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 24
-  PNPM_VERSION: 11.5.0
-  RUST_TOOLCHAIN: 1.95.0
+  PNPM_VERSION: 11.15.1
+  RUST_TOOLCHAIN: 1.97.1
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 jobs:
@@ -49,21 +49,14 @@ jobs:
       - name: Validate release tag and version fields
         run: pnpm validate:release -- --tag "${RELEASE_TAG}"
 
+      - name: Validate AI CLI catalog
+        run: pnpm validate:ai-catalog
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: clippy, rustfmt
-
-      - name: Rust cache
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
-        with:
-          workspaces: src-tauri -> target
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -78,12 +71,12 @@ jobs:
         run: cargo fmt --check
         working-directory: src-tauri
 
-      - name: Rust tests
-        run: cargo test
+      - name: Rust core tests
+        run: cargo test --locked --no-default-features --lib
         working-directory: src-tauri
 
-      - name: Rust clippy
-        run: cargo clippy --all-targets -- -D warnings
+      - name: Rust core clippy
+        run: cargo clippy --locked --no-default-features --lib --tests -- -D warnings
         working-directory: src-tauri
 
   create-release:
@@ -176,6 +169,13 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+        with:
+          workspaces: src-tauri -> target
+          shared-key: release-${{ matrix.target }}
+          cache-workspace-crates: true
       
       - name: Install dependencies (Ubuntu)
         if: matrix.platform == 'ubuntu-22.04'

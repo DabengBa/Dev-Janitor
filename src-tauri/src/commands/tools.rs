@@ -3,33 +3,43 @@
 use crate::ai_tools::normalize_ai_tool_id;
 use crate::detection::{scan_all_tools, ToolInfo};
 
+use super::run_blocking;
 use crate::ai_cli;
 use crate::utils::command::{command_output_with_timeout, command_output_with_timeout_vec};
 use std::time::Duration;
 
 /// Scan for all development tools
 #[tauri::command]
-pub fn scan_tools() -> Vec<ToolInfo> {
-    scan_all_tools()
+pub async fn scan_tools() -> Result<Vec<ToolInfo>, String> {
+    run_blocking(scan_all_tools).await
 }
 
 /// Get tool info by ID
 #[tauri::command]
-pub fn get_tool_info(#[allow(non_snake_case)] toolId: String) -> Option<ToolInfo> {
-    let tools = scan_all_tools();
-    tools.into_iter().find(|t| t.id == toolId)
+pub async fn get_tool_info(
+    #[allow(non_snake_case)] toolId: String,
+) -> Result<Option<ToolInfo>, String> {
+    run_blocking(move || {
+        let tools = scan_all_tools();
+        tools.into_iter().find(|t| t.id == toolId)
+    })
+    .await
 }
 
 /// Uninstall a tool
 #[tauri::command]
-pub fn uninstall_tool(
+pub async fn uninstall_tool(
     #[allow(non_snake_case)] toolId: String,
     path: String,
 ) -> Result<String, String> {
+    run_blocking(move || uninstall_tool_sync(&toolId, &path)).await?
+}
+
+fn uninstall_tool_sync(tool_id: &str, path: &str) -> Result<String, String> {
     // Get uninstall command based on tool type
-    let uninstall_result = match toolId.as_str() {
+    let uninstall_result = match tool_id {
         // Package managers installed via npm
-        "pnpm" | "yarn" => run_command("npm", &["uninstall", "-g", &toolId]),
+        "pnpm" | "yarn" => run_command("npm", &["uninstall", "-g", tool_id]),
 
         // Python tools
         "pipx" => uninstall_with_pip("pipx"),
@@ -72,7 +82,7 @@ pub fn uninstall_tool(
         }
 
         // AI CLI tools - defer to dedicated module (handles latest install methods)
-        id if normalize_ai_tool_id(id).is_some() => ai_cli::uninstall_ai_tool(&toolId),
+        id if normalize_ai_tool_id(id).is_some() => ai_cli::uninstall_ai_tool(tool_id),
 
         // System-level tools - provide instructions
         "node" | "python" | "java" | "go" | "ruby" | "php" | "dotnet" | "deno" | "bun" => {
@@ -80,18 +90,18 @@ pub fn uninstall_tool(
             {
                 Err(format!(
                     "{} should be uninstalled from Windows Settings > Apps",
-                    toolId
+                    tool_id
                 ))
             }
             #[cfg(target_os = "macos")]
             {
-                Err(format!("{} should be uninstalled via Homebrew (brew uninstall {}) or from the original installer", toolId, toolId))
+                Err(format!("{} should be uninstalled via Homebrew (brew uninstall {}) or from the original installer", tool_id, tool_id))
             }
             #[cfg(target_os = "linux")]
             {
                 Err(format!(
                     "{} should be uninstalled via your package manager (apt/yum/pacman)",
-                    toolId
+                    tool_id
                 ))
             }
         }
@@ -99,24 +109,24 @@ pub fn uninstall_tool(
         // Docker and containers
         "docker" | "podman" | "kubectl" => Err(format!(
             "{} should be uninstalled from your system's application management",
-            toolId
+            tool_id
         )),
 
         // Build tools
         "cmake" | "make" | "ninja" => Err(format!(
             "{} should be uninstalled via your system's package manager",
-            toolId
+            tool_id
         )),
 
         // Version control
         "git" | "svn" => Err(format!(
             "{} should be uninstalled via your system's package manager or installer",
-            toolId
+            tool_id
         )),
 
         _ => Err(format!(
             "Uninstall method for {} is not configured. Path: {}",
-            toolId, path
+            tool_id, path
         )),
     };
 
